@@ -20,6 +20,6 @@ repos:
       - id: zola-build
         name: Zola build check
         language: system
-        entry: zola check --skip-external-links
+        entry: zola check
         pass_filenames: false
         files: ^(content|templates|sass|config\.toml)/

@@ -37,4 +37,4 @@ jobs:
         run: zola build
 
       - name: Zola link check
-        run: zola check --skip-external-links
+        run: zola check
