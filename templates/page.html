@@ -8,7 +8,7 @@
 {% block og_url %}{{ page.permalink }}{% endblock %}
 
 {% block content %}
-<div class="page-with-toc">
+<div class="page-with-toc" data-post-slug="{{ page.slug }}">
   {% if page.toc %}
   <aside class="toc">
     <div class="toc-inner">
@@ -85,4 +85,6 @@
   {% endif %}
 </nav>
 {% endif %}
+
+{% include "partials/chat.html" %}
 {% endblock %}

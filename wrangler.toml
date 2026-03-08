@@ -13,3 +13,14 @@ custom_domain = true
 
 [observability]
 enabled = true
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "wtf-content"
+
+[ai]
+binding = "AI"
+
+[vars]
+OAUTH_CLIENT_ID = "wtf-fnord-lol"
+OAUTH_ISSUER = "https://id.27b.io"

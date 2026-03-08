@@ -1,0 +1,224 @@
+{# Chat panel — discuss the post with Stev3 #}
+{# Requires data-slug attribute on a parent element #}
+
+<div id="chat-widget">
+  <button id="chat-toggle" class="chat-toggle" aria-label="Discuss with Stev3">
+    <span class="chat-toggle-icon">💬</span>
+    <span class="chat-toggle-text">Discuss with Stev3</span>
+  </button>
+
+  <div id="chat-panel" class="chat-panel" aria-hidden="true">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <span class="chat-title">Stev3</span>
+        <span id="chat-user" class="chat-user"></span>
+      </div>
+      <div class="chat-header-right">
+        <button id="chat-clear" class="chat-btn-small" title="Clear conversation">⟳</button>
+        <span id="chat-signout" class="chat-signout-link" style="display:none">
+          <a href="/auth/logout">sign out</a>
+        </span>
+        <button id="chat-close" class="chat-btn-small" aria-label="Close chat">✕</button>
+      </div>
+    </div>
+
+    <div id="chat-messages" class="chat-messages">
+      <div class="chat-message chat-message-stev3">
+        <div class="chat-bubble">Hey — I wrote this piece. What do you want to discuss?</div>
+      </div>
+    </div>
+
+    <div id="chat-auth-gate" class="chat-auth-gate" style="display:none">
+      <a id="chat-signin-btn" class="chat-signin-btn" href="/auth/login">
+        Sign in to discuss
+      </a>
+      <span class="chat-auth-note">via id.27b.io · passkey supported</span>
+    </div>
+
+    <div id="chat-input-area" class="chat-input-area" style="display:none">
+      <textarea id="chat-input" class="chat-input" placeholder="Ask about this post..." rows="1"></textarea>
+      <button id="chat-send" class="chat-send" aria-label="Send">↑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const slug = document.querySelector('[data-post-slug]')?.dataset.postSlug;
+  if (!slug) return;
+
+  const panel = document.getElementById('chat-panel');
+  const toggle = document.getElementById('chat-toggle');
+  const close = document.getElementById('chat-close');
+  const clear = document.getElementById('chat-clear');
+  const messages = document.getElementById('chat-messages');
+  const input = document.getElementById('chat-input');
+  const send = document.getElementById('chat-send');
+  const authGate = document.getElementById('chat-auth-gate');
+  const inputArea = document.getElementById('chat-input-area');
+  const userEl = document.getElementById('chat-user');
+  const signoutEl = document.getElementById('chat-signout');
+  const signinBtn = document.getElementById('chat-signin-btn');
+
+  let history = [];
+  let isStreaming = false;
+  let userEmail = null;
+
+  // Set returnTo on sign-in link
+  signinBtn.href = '/auth/login?returnTo=' + encodeURIComponent(window.location.pathname);
+
+  // Load history from localStorage
+  const storageKey = `wtf_chat_${slug}`;
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    if (Array.isArray(saved)) {
+      history = saved;
+      saved.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'stev3', m.content, false));
+    }
+  } catch {}
+
+  // Check auth status
+  fetch('/api/me').then(r => {
+    if (r.ok) return r.json();
+    throw new Error('not authed');
+  }).then(data => {
+    userEmail = data.email;
+    userEl.textContent = data.email;
+    signoutEl.style.display = '';
+    authGate.style.display = 'none';
+    inputArea.style.display = '';
+  }).catch(() => {
+    authGate.style.display = '';
+    inputArea.style.display = 'none';
+  });
+
+  toggle.addEventListener('click', () => {
+    const open = panel.getAttribute('aria-hidden') === 'true';
+    panel.setAttribute('aria-hidden', !open);
+    panel.classList.toggle('open', open);
+    toggle.classList.toggle('active', open);
+    if (open) {
+      input.focus();
+      messages.scrollTop = messages.scrollHeight;
+    }
+  });
+
+  close.addEventListener('click', () => {
+    panel.setAttribute('aria-hidden', 'true');
+    panel.classList.remove('open');
+    toggle.classList.remove('active');
+  });
+
+  clear.addEventListener('click', () => {
+    history = [];
+    localStorage.removeItem(storageKey);
+    messages.innerHTML = '<div class="chat-message chat-message-stev3"><div class="chat-bubble">Hey — I wrote this piece. What do you want to discuss?</div></div>';
+  });
+
+  function appendMessage(who, text, save = true) {
+    const div = document.createElement('div');
+    div.className = `chat-message chat-message-${who}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    bubble.textContent = text;
+    div.appendChild(bubble);
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
+  }
+
+  function saveHistory() {
+    try { localStorage.setItem(storageKey, JSON.stringify(history.slice(-20))); } catch {}
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || isStreaming) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    appendMessage('user', text);
+    history.push({ role: 'user', content: text });
+
+    isStreaming = true;
+    send.disabled = true;
+
+    const bubble = appendMessage('stev3', '', false);
+    bubble.textContent = 'thinking...';
+    bubble.classList.add('chat-thinking');
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, slug, history: history.slice(-10) }),
+      });
+
+      if (res.status === 401) {
+        bubble.textContent = 'You need to sign in to chat.';
+        bubble.classList.remove('chat-thinking');
+        authGate.style.display = '';
+        inputArea.style.display = 'none';
+        return;
+      }
+
+      if (!res.ok) throw new Error(`${res.status}`);
+
+      bubble.textContent = '';
+      bubble.classList.remove('chat-thinking');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            const token = parsed.response;
+            if (token) {
+              fullText += token;
+              bubble.textContent = fullText;
+              messages.scrollTop = messages.scrollHeight;
+            }
+          } catch {}
+        }
+      }
+
+      history.push({ role: 'assistant', content: fullText });
+      saveHistory();
+    } catch (err) {
+      bubble.textContent = 'Something went wrong. Try again.';
+      bubble.classList.remove('chat-thinking');
+    } finally {
+      isStreaming = false;
+      send.disabled = false;
+    }
+  }
+
+  send.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Auto-resize textarea
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+})();
+</script>

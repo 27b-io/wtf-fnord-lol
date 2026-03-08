@@ -1,0 +1,82 @@
+{# Search bar with semantic search #}
+<div class="site-search">
+  <div class="search-wrapper">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="site-search-input" class="search-input" placeholder="Search posts..." autocomplete="off" />
+    <div id="search-results" class="search-results" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const input = document.getElementById('site-search-input');
+  const results = document.getElementById('search-results');
+  let debounceTimer = null;
+  let selectedIdx = -1;
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (q.length < 2) { results.style.display = 'none'; return; }
+    debounceTimer = setTimeout(() => doSearch(q), 300);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.search-result-item');
+    if (!items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+      updateSelection(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIdx = Math.max(selectedIdx - 1, 0);
+      updateSelection(items);
+    } else if (e.key === 'Enter' && selectedIdx >= 0) {
+      e.preventDefault();
+      items[selectedIdx].click();
+    } else if (e.key === 'Escape') {
+      results.style.display = 'none';
+      selectedIdx = -1;
+    }
+  });
+
+  function updateSelection(items) {
+    items.forEach((el, i) => el.classList.toggle('selected', i === selectedIdx));
+  }
+
+  async function doSearch(q) {
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=5`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (!data.results?.length) {
+        results.innerHTML = '<div class="search-no-results">No results</div>';
+        results.style.display = '';
+        return;
+      }
+
+      selectedIdx = -1;
+      results.innerHTML = data.results.map((r, i) => {
+        const snippet = (r.chunk_text || '').slice(0, 120) + '…';
+        return `<a class="search-result-item" href="/deep-dives/${r.slug}/">
+          <div class="search-result-title">${escHtml(r.title)}</div>
+          <div class="search-result-snippet">${escHtml(snippet)}</div>
+        </a>`;
+      }).join('');
+      results.style.display = '';
+    } catch {}
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrapper')) results.style.display = 'none';
+  });
+})();
+</script>
