@@ -43,13 +43,9 @@ Be concise, opinionated, and technically precise. Use short paragraphs. Don't he
 
 async function hmacSign(payload: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+  ]);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
   return btoa(String.fromCharCode(...new Uint8Array(sig)))
     .replace(/\+/g, '-')
@@ -57,11 +53,7 @@ async function hmacSign(payload: string, secret: string): Promise<string> {
     .replace(/=+$/, '');
 }
 
-async function hmacVerify(
-  payload: string,
-  signature: string,
-  secret: string
-): Promise<boolean> {
+async function hmacVerify(payload: string, signature: string, secret: string): Promise<boolean> {
   const expected = await hmacSign(payload, secret);
   return expected === signature;
 }
@@ -77,20 +69,14 @@ function base64UrlDecode(data: string): string {
 
 // ─── Session management ─────────────────────────
 
-async function createSessionToken(
-  session: Session,
-  secret: string
-): Promise<string> {
+async function createSessionToken(session: Session, secret: string): Promise<string> {
   const header = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64UrlEncode(JSON.stringify(session));
   const signature = await hmacSign(`${header}.${payload}`, secret);
   return `${header}.${payload}.${signature}`;
 }
 
-async function verifySessionToken(
-  token: string,
-  secret: string
-): Promise<Session | null> {
+async function verifySessionToken(token: string, secret: string): Promise<Session | null> {
   const parts = token.split('.');
   if (parts.length !== 3) return null;
 
@@ -130,10 +116,7 @@ async function generateCodeVerifier(): Promise<string> {
 }
 
 async function generateCodeChallenge(verifier: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(verifier)
-  );
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -166,7 +149,7 @@ function base64UrlToArrayBuffer(b64url: string): ArrayBuffer {
 async function verifyIdToken(
   idToken: string,
   issuer: string,
-  clientId: string
+  clientId: string,
 ): Promise<{ sub: string; email: string } | null> {
   const parts = idToken.split('.');
   if (parts.length !== 3) return null;
@@ -192,9 +175,7 @@ async function verifyIdToken(
 
     // Verify signature against JWKS
     const jwks = await getJwks(issuer);
-    const jwk = header.kid
-      ? jwks.find((k) => k.kid === header.kid)
-      : jwks[0];
+    const jwk = header.kid ? jwks.find((k) => k.kid === header.kid) : jwks[0];
     if (!jwk) return null;
 
     const cryptoKey = await crypto.subtle.importKey(
@@ -202,14 +183,14 @@ async function verifyIdToken(
       jwk as JsonWebKey,
       { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
       false,
-      ['verify']
+      ['verify'],
     );
 
     const signatureValid = await crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',
       cryptoKey,
       base64UrlToArrayBuffer(parts[2]),
-      new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+      new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
     );
 
     if (!signatureValid) return null;
@@ -239,7 +220,7 @@ function jsonResponse(data: unknown, status = 200, extraHeaders?: Record<string,
 
 async function embed(ai: Ai, text: string | string[]): Promise<number[][]> {
   const input = Array.isArray(text) ? text : [text];
-  const result = await ai.run('@cf/baai/bge-base-en-v1.5', { text: input });
+  const result = (await ai.run('@cf/baai/bge-base-en-v1.5', { text: input })) as { data: number[][] };
   return result.data;
 }
 
@@ -265,9 +246,7 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const returnTo = url.searchParams.get('returnTo') ?? '/';
 
-  const state = base64UrlEncode(
-    JSON.stringify({ returnTo, nonce: crypto.randomUUID() })
-  );
+  const state = base64UrlEncode(JSON.stringify({ returnTo, nonce: crypto.randomUUID() }));
   const codeVerifier = await generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
 
@@ -356,11 +335,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   };
 
   // Verify id_token
-  const claims = await verifyIdToken(
-    tokens.id_token,
-    env.OAUTH_ISSUER,
-    env.OAUTH_CLIENT_ID
-  );
+  const claims = await verifyIdToken(tokens.id_token, env.OAUTH_ISSUER, env.OAUTH_CLIENT_ID);
 
   if (!claims) {
     return new Response('Invalid ID token', { status: 400 });
@@ -379,7 +354,9 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   try {
     const stateData = JSON.parse(base64UrlDecode(state)) as { returnTo?: string };
     returnTo = stateData.returnTo ?? '/';
-  } catch { /* default */ }
+  } catch {
+    /* default */
+  }
 
   // Clear auth state cookie, set session cookie
   return new Response(null, {
@@ -416,7 +393,7 @@ async function handleMe(request: Request, env: Env): Promise<Response> {
 
 async function handleSearch(request: Request, env: Env): Promise<Response> {
   let query: string;
-  let limit = 5;
+  let limit: number;
 
   if (request.method === 'GET') {
     const url = new URL(request.url);

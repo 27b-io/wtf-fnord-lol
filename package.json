@@ -5,11 +5,24 @@
     "build": "zola build",
     "dev": "zola serve & wrangler dev",
     "deploy": "zola build && wrangler deploy",
-    "preview": "zola build && wrangler dev"
+    "preview": "zola build && wrangler dev",
+    "lint": "eslint 'worker/**/*.ts' 'scripts/**/*.ts'",
+    "lint:fix": "eslint 'worker/**/*.ts' 'scripts/**/*.ts' --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --check 'worker/**/*.ts' 'scripts/**/*.ts'",
+    "format:fix": "prettier --write 'worker/**/*.ts' 'scripts/**/*.ts'",
+    "check": "npm run typecheck && npm run lint && npm run format && zola build"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260207.0",
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "eslint": "^10.0.3",
+    "prettier": "^3.8.1",
     "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
     "wrangler": "^4.0.0"
   }
 }

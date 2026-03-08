@@ -18,10 +18,7 @@ function getAuthToken(): string {
   if (process.env.CLOUDFLARE_API_TOKEN) {
     return process.env.CLOUDFLARE_API_TOKEN;
   }
-  const configPath = join(
-    process.env.HOME ?? '~',
-    '.config/.wrangler/config/default.toml'
-  );
+  const configPath = join(process.env.HOME ?? '~', '.config/.wrangler/config/default.toml');
   const config = readFileSync(configPath, 'utf-8');
   const match = config.match(/oauth_token\s*=\s*"([^"]+)"/);
   if (!match) throw new Error('No oauth_token found in wrangler config');
@@ -87,12 +84,7 @@ function findMarkdownFiles(dir: string): string[] {
   return files;
 }
 
-async function callCfApi(
-  path: string,
-  token: string,
-  method = 'GET',
-  body?: unknown
-): Promise<unknown> {
+async function callCfApi(path: string, token: string, method = 'GET', body?: unknown): Promise<unknown> {
   const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}${path}`;
   const res = await fetch(url, {
     method,
@@ -111,16 +103,10 @@ async function callCfApi(
   return res.json();
 }
 
-async function embedTexts(
-  texts: string[],
-  token: string
-): Promise<number[][]> {
-  const result = (await callCfApi(
-    `/ai/run/${EMBEDDING_MODEL}`,
-    token,
-    'POST',
-    { text: texts }
-  )) as { result: { data: number[][] } };
+async function embedTexts(texts: string[], token: string): Promise<number[][]> {
+  const result = (await callCfApi(`/ai/run/${EMBEDDING_MODEL}`, token, 'POST', { text: texts })) as {
+    result: { data: number[][] };
+  };
   return result.result.data;
 }
 
@@ -130,12 +116,10 @@ async function upsertVectors(
     values: number[];
     metadata: Record<string, unknown>;
   }>,
-  token: string
+  token: string,
 ): Promise<void> {
   // Vectorize upsert expects NDJSON
-  const ndjson = vectors
-    .map((v) => JSON.stringify(v))
-    .join('\n');
+  const ndjson = vectors.map((v) => JSON.stringify(v)).join('\n');
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/vectorize/v2/indexes/${INDEX_NAME}/upsert`;
   const res = await fetch(url, {

@@ -3,7 +3,7 @@
 
 base_url = "https://wtf.fnord.lol"
 title = "WTF"
-description = "Papers, architectures, and systems explained without the bullshit"
+description = "Papers, architectures, and systems explained without the bullshit. Maybe a little bullshit."
 default_language = "en"
 compile_sass = true
 build_search_index = false
