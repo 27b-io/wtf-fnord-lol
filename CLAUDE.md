@@ -74,6 +74,8 @@ Single SCSS file `sass/style.scss`, compiled by Zola. Dark theme with defined pa
 
 GitHub Actions on push to `main` (filtered to content/template/worker changes): builds with Zola, deploys via Wrangler, then indexes content into Vectorize. Secrets: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`.
 
+**Branch protection is enforced on `main`** — always work on a feature branch and create a PR. No direct pushes.
+
 ## Key Conventions
 
 - Content frontmatter uses TOML (`+++` delimiters), not YAML
