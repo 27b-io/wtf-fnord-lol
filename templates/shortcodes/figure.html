@@ -1,0 +1,16 @@
+{% set img_id = src | replace(from="/", to="-") | replace(from=".", to="-") %}
+<figure>
+  <a href="#view{{ img_id }}" class="figure-zoom">
+    <img src="{{ src }}" alt="{{ alt | default(value='') }}" loading="lazy">
+  </a>
+  {% if body %}
+  <figcaption>{{ body | markdown | safe }}</figcaption>
+  {% elif caption is defined %}
+  <figcaption>{{ caption | markdown(inline=true) | safe }}</figcaption>
+  {% endif %}
+</figure>
+<div class="lightbox" id="view{{ img_id }}">
+  <a href="#_" class="lightbox-backdrop">
+    <img src="{{ src }}" alt="{{ alt | default(value='') }}">
+  </a>
+</div>

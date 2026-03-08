@@ -1,0 +1,924 @@
+// WTF — dark technical theme
+// Papers, architectures, and systems explained without the bullshit
+
+// ─── Palette ────────────────────────────────────
+
+$bg:          #0a0a0f;
+$bg-raised:   #111118;
+$bg-surface:  #16161f;
+$fg:          #c8c8d0;
+$fg-muted:    #6a6a78;
+$fg-dim:      #3e3e4a;
+$accent:      #6cb4ee;
+$accent-warm: #c6a07a;
+$border:      #1e1e2a;
+$serif:       'Georgia', 'Times New Roman', Times, serif;
+$display:     'Space Grotesk', 'Inter', -apple-system, sans-serif;
+$mono:        'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+// Callout colors
+$callout-insight:  #6cb4ee;
+$callout-warning:  #e6a855;
+$callout-tldr:     #5ec685;
+$callout-question: #b07ae6;
+
+// ─── Reset ──────────────────────────────────────
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  background: rgba($accent, 0.25);
+  color: $fg;
+}
+
+:focus-visible {
+  outline: 2px solid $accent;
+  outline-offset: 3px;
+}
+
+html {
+  font-size: 18px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: $bg;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  color: $fg;
+  font-family: $serif;
+  line-height: 1.7;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+// ─── Scroll progress ────────────────────────────
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  z-index: 1000;
+  background: transparent;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, $accent, $accent-warm);
+    transform-origin: left;
+    animation: scroll-progress linear;
+    animation-timeline: scroll(root);
+  }
+}
+
+@keyframes scroll-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+// ─── Layout ─────────────────────────────────────
+
+.container {
+  max-width: 750px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  width: 100%;
+}
+
+// ─── Header ─────────────────────────────────────
+
+.site-header {
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid $border;
+  margin-bottom: 3rem;
+
+  .site-title {
+    font-family: $display;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+
+    a {
+      color: $fg;
+      text-decoration: none;
+      transition: color 0.3s ease, text-shadow 0.3s ease;
+      text-shadow: 0 0 40px rgba($accent, 0.08);
+
+      &:hover {
+        color: $accent;
+        text-shadow: 0 0 30px rgba($accent, 0.15);
+      }
+    }
+  }
+
+  .site-tagline {
+    font-family: $mono;
+    font-size: 0.7rem;
+    color: $fg-muted;
+    margin-top: 0.4rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  nav {
+    margin-top: 1.2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+
+    a {
+      font-family: $mono;
+      font-size: 0.72rem;
+      color: $fg-muted;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+      transition: color 0.3s ease;
+
+      &:hover { color: $accent; }
+    }
+  }
+}
+
+// ─── Post list ──────────────────────────────────
+
+.post-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 750px;
+
+  li {
+    padding: 1.5rem 1.5rem 1.5rem 1.8rem;
+    border-left: 2px solid transparent;
+    transition: border-color 0.4s ease, background-color 0.4s ease;
+    margin-bottom: 0.25rem;
+
+    animation: list-reveal 0.4s ease both;
+    @for $i from 1 through 15 {
+      &:nth-child(#{$i}) { animation-delay: #{$i * 0.04}s; }
+    }
+
+    &:hover {
+      border-left-color: $accent;
+      background-color: rgba($accent, 0.03);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      display: block;
+    }
+  }
+}
+
+@keyframes list-reveal {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.post-date {
+  font-family: $mono;
+  font-size: 0.7rem;
+  color: $fg-dim;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 0.35rem;
+
+  &::before {
+    content: '>';
+    margin-right: 0.5em;
+    color: $fg-dim;
+  }
+}
+
+.post-title {
+  font-family: $display;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: $fg;
+  margin-bottom: 0.3rem;
+  transition: color 0.3s ease;
+
+  li:hover & { color: $accent; }
+}
+
+.post-summary {
+  font-family: $serif;
+  font-size: 0.85rem;
+  color: $fg-muted;
+  line-height: 1.5;
+}
+
+.post-reading-time {
+  font-family: $mono;
+  font-size: 0.65rem;
+  color: $fg-dim;
+  letter-spacing: 0.04em;
+}
+
+.post-meta-line {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.post-series-tag {
+  font-family: $mono;
+  font-size: 0.6rem;
+  color: $accent;
+  background: rgba($accent, 0.1);
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+}
+
+// ─── Article ────────────────────────────────────
+
+article {
+  margin-bottom: 4rem;
+  flex: 1;
+  min-width: 0;
+
+  .post-header {
+    margin-bottom: 2.5rem;
+
+    h1 {
+      font-family: $display;
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: $fg;
+      line-height: 1.15;
+    }
+
+    .post-lede {
+      font-family: $serif;
+      font-size: 1.05rem;
+      color: $fg-muted;
+      line-height: 1.55;
+      margin-top: 0.8rem;
+    }
+
+    .post-meta {
+      color: $fg-dim;
+      font-family: $mono;
+      font-size: 0.72rem;
+      margin-top: 0.8rem;
+      letter-spacing: 0.04em;
+
+      a {
+        color: $accent;
+        text-decoration: none;
+        &:hover { text-decoration: underline; }
+      }
+    }
+
+    .post-series {
+      font-family: $mono;
+      font-size: 0.72rem;
+      color: $fg-muted;
+      margin-top: 0.4rem;
+
+      a {
+        color: $accent;
+        text-decoration: none;
+        &:hover { text-decoration: underline; }
+      }
+    }
+  }
+}
+
+// ─── Page with TOC layout ───────────────────────
+
+.page-with-toc {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.toc {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1100px;
+  }
+
+  .toc {
+    display: block;
+    width: 250px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    order: 2;
+  }
+
+  .toc-inner {
+    padding: 1rem;
+    border-left: 1px solid $border;
+  }
+
+  .toc-title {
+    font-family: $mono;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: $fg-dim;
+    margin-bottom: 0.8rem;
+  }
+
+  .toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    ul {
+      padding-left: 0.8rem;
+    }
+
+    li {
+      margin-bottom: 0.3rem;
+    }
+
+    a {
+      font-family: $mono;
+      font-size: 0.68rem;
+      color: $fg-muted;
+      text-decoration: none;
+      line-height: 1.4;
+      transition: color 0.2s;
+
+      &:hover { color: $accent; }
+    }
+  }
+
+  article {
+    flex: 1;
+    min-width: 0;
+    max-width: 750px;
+  }
+}
+
+// ─── Prose ──────────────────────────────────────
+
+.prose {
+  p {
+    margin-bottom: 1.4rem;
+    line-height: 1.75;
+  }
+
+  h2 {
+    font-family: $display;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $fg;
+    margin: 3rem 0 1rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid $border;
+  }
+
+  h3 {
+    font-family: $display;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: $fg;
+    margin: 2rem 0 0.8rem;
+  }
+
+  a {
+    color: $accent;
+    text-decoration: underline;
+    text-decoration-color: rgba($accent, 0.3);
+    text-underline-offset: 0.15em;
+    transition: text-decoration-color 0.3s ease;
+
+    &:hover { text-decoration-color: $accent; }
+  }
+
+  blockquote {
+    border-left: 2px solid $accent;
+    padding: 0.3rem 0 0.3rem 1.5rem;
+    margin: 2rem 0;
+    color: rgba($fg, 0.85);
+    font-style: italic;
+
+    p { margin-bottom: 0; }
+  }
+
+  ul, ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1.4rem;
+
+    li {
+      margin-bottom: 0.4rem;
+      line-height: 1.65;
+    }
+  }
+
+  ul {
+    list-style: none;
+
+    li::before {
+      content: '—';
+      color: $fg-dim;
+      display: inline-block;
+      width: 1.5em;
+      margin-left: -1.5em;
+    }
+  }
+
+  code {
+    font-family: $mono;
+    font-size: 0.82em;
+    color: $accent-warm;
+    background: rgba($accent-warm, 0.08);
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+  }
+
+  pre {
+    background: $bg-raised;
+    border: 1px solid $border;
+    border-radius: 6px;
+    padding: 1.4rem 1.6rem;
+    overflow-x: auto;
+    margin: 2rem 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    position: relative;
+
+    code {
+      background: none;
+      padding: 0;
+      color: $fg;
+    }
+  }
+
+  table {
+    width: 100%;
+    margin: 2rem 0;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+
+    th, td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid $border;
+      text-align: left;
+    }
+
+    th {
+      font-family: $mono;
+      font-size: 0.72rem;
+      color: $fg-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 400;
+    }
+
+    tr:hover td {
+      background: rgba($accent, 0.03);
+    }
+  }
+
+  hr {
+    border: none;
+    margin: 3.5rem auto;
+    height: auto;
+    text-align: center;
+    overflow: visible;
+
+    &::after {
+      content: '· · ·';
+      display: block;
+      letter-spacing: 0.8em;
+      color: $fg-dim;
+      font-size: 1.2rem;
+    }
+  }
+
+  em { color: rgba($fg, 0.85); }
+  strong { color: lighten($fg, 8%); font-weight: 600; }
+
+  // Figures
+  figure {
+    margin: 3rem 0;
+    width: calc(100% + 4rem);
+    margin-left: -2rem;
+
+    .figure-zoom {
+      display: block;
+      cursor: zoom-in;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      border: 1px solid $border;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    figcaption {
+      max-width: 750px;
+      margin: 0.8rem auto 0;
+      padding: 0 1rem;
+      font-size: 0.75rem;
+      color: $fg-muted;
+      line-height: 1.5;
+      font-style: italic;
+      p { margin-bottom: 0; }
+    }
+  }
+}
+
+// ─── Lightbox ───────────────────────────────────
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+
+  &:target { opacity: 1; visibility: visible; }
+
+  .lightbox-backdrop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    cursor: zoom-out;
+    padding: 2rem;
+  }
+
+  img {
+    max-width: 95vw;
+    max-height: 95vh;
+    object-fit: contain;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}
+
+// ─── Pull quote ─────────────────────────────────
+
+.pull-quote {
+  position: relative;
+  max-width: 920px;
+  margin: 3rem auto;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  font-family: $serif;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: $fg;
+  font-style: italic;
+
+  &::before {
+    content: '\201C';
+    display: block;
+    font-size: 4rem;
+    line-height: 1;
+    color: $accent;
+    opacity: 0.4;
+    margin-bottom: 0.5rem;
+  }
+
+  cite {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    font-style: normal;
+    font-family: $mono;
+    color: $fg-muted;
+  }
+}
+
+// ─── Glossary terms ─────────────────────────────
+
+.glossary-term {
+  position: relative;
+  display: inline;
+
+  dfn {
+    font-style: normal;
+    font-weight: 600;
+    color: $accent;
+    cursor: help;
+    border-bottom: 1px dotted rgba($accent, 0.4);
+  }
+
+  .glossary-def {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: $bg-surface;
+    border: 1px solid $border;
+    border-radius: 4px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.78rem;
+    color: $fg;
+    line-height: 1.4;
+    white-space: normal;
+    width: max-content;
+    max-width: 320px;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    margin-bottom: 0.3rem;
+  }
+
+  &:hover .glossary-def {
+    display: block;
+  }
+}
+
+// ─── Glossary page ──────────────────────────────
+
+.glossary-page {
+  dl {
+    margin: 1rem 0;
+  }
+
+  dt {
+    font-family: $display;
+    font-weight: 700;
+    font-size: 1rem;
+    color: $accent;
+    margin-top: 1.5rem;
+    margin-bottom: 0.3rem;
+  }
+
+  dd {
+    margin-left: 0;
+    padding-left: 1rem;
+    border-left: 2px solid $border;
+    color: $fg;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+}
+
+// ─── Citations ──────────────────────────────────
+
+.citation {
+  .cite-link {
+    font-family: $mono;
+    font-size: 0.78em;
+    color: $accent;
+    text-decoration: none;
+    background: rgba($accent, 0.08);
+    padding: 0.1em 0.3em;
+    border-radius: 2px;
+
+    &:hover {
+      background: rgba($accent, 0.15);
+    }
+  }
+}
+
+// ─── References section ─────────────────────────
+
+.references {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid $border;
+
+  .references-title {
+    font-family: $mono;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: $fg-dim;
+    margin-bottom: 1rem;
+  }
+}
+
+// ─── Callout boxes ──────────────────────────────
+
+.callout {
+  margin: 2rem 0;
+  padding: 1.2rem 1.5rem;
+  border-radius: 6px;
+  border-left: 3px solid;
+
+  .callout-title {
+    font-family: $display;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .callout-body {
+    font-size: 0.92rem;
+    line-height: 1.6;
+
+    p:last-child { margin-bottom: 0; }
+  }
+
+  &-insight {
+    background: rgba($callout-insight, 0.06);
+    border-color: $callout-insight;
+    .callout-title { color: $callout-insight; }
+  }
+
+  &-warning {
+    background: rgba($callout-warning, 0.06);
+    border-color: $callout-warning;
+    .callout-title { color: $callout-warning; }
+  }
+
+  &-tldr {
+    background: rgba($callout-tldr, 0.06);
+    border-color: $callout-tldr;
+    .callout-title { color: $callout-tldr; }
+  }
+
+  &-question {
+    background: rgba($callout-question, 0.06);
+    border-color: $callout-question;
+    .callout-title { color: $callout-question; }
+  }
+}
+
+// ─── Code compare ───────────────────────────────
+
+.code-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 2rem 0;
+
+  .code-compare-panel {
+    overflow: hidden;
+  }
+
+  .code-compare-label {
+    font-family: $mono;
+    font-size: 0.65rem;
+    color: $fg-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  pre {
+    margin: 0 !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .code-compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ─── Post navigation ────────────────────────────
+
+.post-nav {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid $border;
+}
+
+.post-nav-link {
+  flex: 1;
+  padding: 1rem 1.2rem;
+  background: $bg-raised;
+  border: 1px solid $border;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+
+  &:hover {
+    border-color: $accent;
+    background: rgba($accent, 0.04);
+  }
+
+  &.post-nav-older { text-align: right; }
+}
+
+.post-nav-label {
+  display: block;
+  font-family: $mono;
+  font-size: 0.65rem;
+  color: $fg-dim;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.post-nav-title {
+  display: block;
+  font-family: $display;
+  font-size: 0.95rem;
+  color: $fg;
+  transition: color 0.3s ease;
+
+  .post-nav-link:hover & { color: $accent; }
+}
+
+// ─── Footnotes ──────────────────────────────────
+
+.footnotes {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid $border;
+  font-size: 0.82rem;
+  color: $fg-muted;
+  line-height: 1.6;
+
+  ol {
+    padding-left: 1.5rem;
+    list-style: decimal;
+
+    li {
+      margin-bottom: 0.6rem;
+
+      &::marker {
+        color: $accent;
+        font-family: $mono;
+        font-size: 0.75rem;
+      }
+
+      &::before { content: none; }
+    }
+  }
+}
+
+// ─── Footer ─────────────────────────────────────
+
+.site-footer {
+  margin-top: auto;
+  padding: 2.5rem 1.5rem;
+  border-top: 1px solid $border;
+  text-align: center;
+  color: $fg-dim;
+  font-size: 0.68rem;
+  font-family: $mono;
+  letter-spacing: 0.04em;
+
+  a {
+    color: $fg-muted;
+    text-decoration: none;
+    &:hover { color: $accent; }
+  }
+}
+
+// ─── Responsive ─────────────────────────────────
+
+@media (max-width: 600px) {
+  html { font-size: 16px; }
+
+  .site-header {
+    padding: 2rem 1.5rem 1.5rem;
+    .site-title { font-size: 1.5rem; }
+  }
+
+  article .post-header h1 { font-size: 1.8rem; }
+
+  .prose figure {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .pull-quote {
+    padding: 1.5rem 1rem;
+    font-size: 1.1rem;
+  }
+
+  .post-nav {
+    flex-direction: column;
+  }
+
+  .post-nav-link.post-nav-older { text-align: left; }
+}

@@ -1,0 +1,14 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "wtf-fnord-lol"
+main = "worker/index.ts"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "public"
+
+[[routes]]
+pattern = "wtf.fnord.lol"
+custom_domain = true
+
+[observability]
+enabled = true

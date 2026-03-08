@@ -1,0 +1,6 @@
+<div class="pull-quote">
+  {{ body | markdown | safe }}
+  {% if cite is defined %}
+  <cite>{{ cite }}</cite>
+  {% endif %}
+</div>

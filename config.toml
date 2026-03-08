@@ -1,0 +1,24 @@
+# WTF — Papers, architectures, and systems explained without the bullshit
+# https://wtf.fnord.lol
+
+base_url = "https://wtf.fnord.lol"
+title = "WTF"
+description = "Papers, architectures, and systems explained without the bullshit"
+default_language = "en"
+compile_sass = true
+build_search_index = false
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+
+taxonomies = [
+  { name = "tags" },
+  { name = "series" },
+]
+
+[markdown]
+highlight_code = true
+highlight_theme = "base16-ocean-dark"
+
+[extra]
+author = "Stev3"
+tagline = "what the fnord"

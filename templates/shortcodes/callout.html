@@ -1,0 +1,11 @@
+<div class="callout callout-{{ type }}">
+  <div class="callout-title">
+    {% if type == "insight" %}💡 Insight
+    {% elif type == "warning" %}⚠️ Warning
+    {% elif type == "tldr" %}📋 TL;DR
+    {% elif type == "question" %}❓ Question
+    {% else %}📌 Note
+    {% endif %}
+  </div>
+  <div class="callout-body">{{ body | markdown | safe }}</div>
+</div>

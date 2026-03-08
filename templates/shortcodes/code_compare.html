@@ -1,0 +1,10 @@
+<div class="code-compare">
+  <div class="code-compare-panel">
+    <div class="code-compare-label">{{ label_a | default(value="Before") }}</div>
+    {{ body | markdown | safe }}
+  </div>
+  <div class="code-compare-panel">
+    <div class="code-compare-label">{{ label_b | default(value="After") }}</div>
+    {{ body_b | default(value="") | markdown | safe }}
+  </div>
+</div>

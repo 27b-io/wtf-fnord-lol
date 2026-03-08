@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ config.title }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ config.description }}{% endblock %}">
+  <link rel="stylesheet" href="{{ get_url(path='style.css') }}">
+  <link rel="alternate" type="application/atom+xml" title="{{ config.title }}" href="{{ get_url(path='atom.xml') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  {# Open Graph #}
+  <meta property="og:site_name" content="{{ config.title }}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{{ config.title }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ config.description }}{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ config.base_url }}{% endblock %}">
+  <meta name="twitter:card" content="summary">
+</head>
+<body>
+  <div class="scroll-progress"></div>
+
+  <header class="site-header">
+    <div class="site-title"><a href="{{ config.base_url }}">{{ config.title }}</a></div>
+    <div class="site-tagline">{{ config.extra.tagline }}</div>
+    <nav>
+      <a href="{{ get_url(path='@/deep-dives/_index.md') }}">deep dives</a>
+      <a href="{{ get_url(path='@/glossary.md') }}">glossary</a>
+      <a href="{{ get_url(path='@/about.md') }}">about</a>
+      <a href="{{ get_url(path='atom.xml') }}">feed</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    {{ config.extra.author }} · {{ now() | date(format="%Y") }} · <a href="https://fnord.lol">fnord.lol</a>
+  </footer>
+</body>
+</html>
