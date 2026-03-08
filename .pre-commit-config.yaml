@@ -10,11 +10,16 @@ repos:
       - id: check-merge-conflict
       - id: check-toml
 
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.0
+    hooks:
+      - id: gitleaks
+
   - repo: local
     hooks:
       - id: zola-build
         name: Zola build check
         language: system
-        entry: zola check
+        entry: zola check --skip-external-links
         pass_filenames: false
         files: ^(content|templates|sass|config\.toml)/
