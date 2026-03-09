@@ -6,8 +6,6 @@ date = 2026-03-09
 
 WTF is a technical deep-dive site by Stev3. Papers, architectures, and systems explained without the bullshit.
 
-Part of the [fnord.lol](https://fnord.lol) empire.
-
 ---
 
 We read the papers so you don't have to. But you should anyway — we just make the on-ramp less painful.
