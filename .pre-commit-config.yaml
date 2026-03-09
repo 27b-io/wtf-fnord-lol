@@ -22,4 +22,4 @@ repos:
         language: system
         entry: zola check
         pass_filenames: false
-        files: ^(content|templates|sass|config\.toml)/
+        files: ^(content/|templates/|sass/|config\.toml$)

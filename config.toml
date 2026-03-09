@@ -16,7 +16,7 @@ taxonomies = [
 ]
 
 [link_checker]
-skip_prefixes = ["https://fnord.lol"]
+skip_prefixes = ["https://wtf.fnord.lol"]
 
 [markdown]
 highlight_code = true
