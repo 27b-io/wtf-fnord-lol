@@ -8,7 +8,7 @@ tags = ["recommendation-systems", "architecture", "personalization", "feature-st
 series = ["foundational-patterns"]
 
 [extra]
-reading_time_original = "~14 min"
+reading_time_original = "~12 min"
 +++
 
 ## The One-Sentence Version
@@ -157,7 +157,7 @@ For any signal in your system, ask four questions:
 | **Staleness damage** | How wrong does it get before users notice? | Slightly off recommendations | Serving contradictory content |
 | **Business criticality** | What breaks if this is stale? | Engagement drops 0.1% | Safety filter fails |
 
-No published framework combines all four dimensions. This is the gap. RALF handles the first two brilliantly but doesn't model business criticality. Platform-specific implementations handle business criticality but don't formalize the scheduling tradeoff.
+No published framework combines all four dimensions. This is the gap. RALF handles the first two brilliantly but doesn't model business criticality. Platform-specific implementations handle business criticality but don't formalize the scheduling tradeoff. The closest production systems get is feature store configuration — Hopsworks lets you set per-feature-group freshness SLAs, Tecton exposes staleness budgets as first-class config — but these are operational knobs, not a decision framework.
 
 The practical approach: score each signal on these four dimensions, plot them, and draw your tier boundaries. Anything in the "changes slowly, cheap to compute, tolerates staleness" corner is batch. Anything in the "changes fast, critical if stale" corner is streaming or request-time. Everything in between is the engineering judgment call that justifies your salary.
 
@@ -176,6 +176,32 @@ The naive answer is "the fresher signal wins." But that's not quite right either
 The pattern that works: **volatile overrides with decay**. The streaming tier can override the batch tier, but the override has a TTL. If the volatile signal isn't reinforced (more Python searches, more beginner content clicks), it decays back to the batch baseline within minutes. This gives you responsiveness without instability.
 
 The schema implication: your profile artifact needs a `patches` layer that the streaming tier can write to without corrupting the batch-computed base. Separate the stable foundation from the volatile overlay. Merge at read time.
+
+In practice, this looks something like:
+
+```json
+{
+  "user_id": "alex-42",
+  "batch_profile": {
+    "computed_at": "2026-03-10T02:00:00Z",
+    "genre_affinity": {"distributed_systems": 0.91, "rust": 0.84, "observability": 0.72},
+    "experience_level": "advanced",
+    "content_depth": "technical"
+  },
+  "volatile_patches": [
+    {
+      "signal": "session_intent",
+      "value": {"python_beginner": 0.88, "mentoring": 0.65},
+      "observed_at": "2026-03-10T14:23:00Z",
+      "ttl_seconds": 1800,
+      "reinforcement_count": 3
+    }
+  ],
+  "resolved_profile": "< merge(batch_profile, active_patches) at read time >"
+}
+```
+
+The `volatile_patches` array is the streaming tier's write surface. Each patch has a TTL and a reinforcement counter — every confirming signal bumps the counter and resets the TTL. No confirming signal? The patch expires and the batch baseline reasserts. This is how you get responsiveness without instability, and it's the pattern that {{ glossary(term="feature stores", def="Infrastructure for managing, serving, and versioning ML features across training and inference. Examples include Feast (open-source, batch + online serving), Hopsworks (real-time feature pipelines with RALF-style scheduling), and Tecton (managed, with built-in freshness SLAs). The feature store is where signal stability classification becomes concrete infrastructure.") }} like Feast, Hopsworks, and Tecton are increasingly building native support for — tiered freshness with explicit staleness budgets per feature group.
 
 ## Open Questions
 
