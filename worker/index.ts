@@ -334,21 +334,21 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   }
 
   if (!code || !state) {
-    return new Response('Missing code or state', { status: 400 });
+    return new Response('Missing code or state', { status: 400, headers: securityHeaders() });
   }
 
   // Verify state cookie
   const cookie = request.headers.get('Cookie');
   const stateMatch = cookie?.match(/wtf_auth_state=([^;]+)/);
   if (!stateMatch) {
-    return new Response('Missing auth state cookie', { status: 400 });
+    return new Response('Missing auth state cookie', { status: 400, headers: securityHeaders() });
   }
 
   const [encodedPayload, stateSig] = stateMatch[1].split('.');
   const statePayload = base64UrlDecode(encodedPayload);
   const stateValid = await hmacVerify(statePayload, stateSig, env.SESSION_SECRET);
   if (!stateValid) {
-    return new Response('Invalid auth state', { status: 400 });
+    return new Response('Invalid auth state', { status: 400, headers: securityHeaders() });
   }
 
   const { state: savedState, codeVerifier } = JSON.parse(statePayload) as {
@@ -356,7 +356,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
     codeVerifier: string;
   };
   if (savedState !== state) {
-    return new Response('State mismatch', { status: 400 });
+    return new Response('State mismatch', { status: 400, headers: securityHeaders() });
   }
 
   // Exchange code for tokens
@@ -376,7 +376,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
     console.error('Token exchange failed:', text);
-    return new Response('Authentication failed', { status: 500 });
+    return new Response('Authentication failed', { status: 500, headers: securityHeaders() });
   }
 
   const tokens = (await tokenRes.json()) as {
@@ -388,7 +388,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   const claims = await verifyIdToken(tokens.id_token, env.OAUTH_ISSUER, env.OAUTH_CLIENT_ID);
 
   if (!claims) {
-    return new Response('Invalid ID token', { status: 400 });
+    return new Response('Invalid ID token', { status: 400, headers: securityHeaders() });
   }
 
   // Create session
@@ -666,7 +666,7 @@ export default {
       });
     } catch (err) {
       console.error(`Asset fetch failed: ${url.pathname}`, err);
-      return new Response('Not Found', { status: 404 });
+      return new Response('Not Found', { status: 404, headers: securityHeaders() });
     }
   },
 } satisfies ExportedHandler<Env>;
