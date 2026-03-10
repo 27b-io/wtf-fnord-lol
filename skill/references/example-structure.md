@@ -4,7 +4,7 @@ This shows how a paper deep dive uses the WTF format. Based on the KARL article 
 
 ## Arc
 
-```
+```text
 ## The One-Sentence Version          ← Hook. What happened, plain language.
    {{ glossary() }} on first jargon use
 

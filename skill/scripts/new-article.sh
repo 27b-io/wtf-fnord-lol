@@ -5,6 +5,13 @@ set -euo pipefail
 
 SLUG="${1:?Usage: new-article.sh <slug> \"Title\"}"
 TITLE="${2:?Usage: new-article.sh <slug> \"Title\"}"
+
+# Validate slug: only lowercase alphanumeric, hyphens, dots allowed
+if [[ ! "$SLUG" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
+  echo "Error: invalid slug '$SLUG' — use only lowercase letters, numbers, hyphens, dots" >&2
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="${WTF_REPO:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 DIR="$REPO/content/deep-dives/$SLUG"
@@ -17,9 +24,14 @@ fi
 
 mkdir -p "$DIR"
 
+# Sanitize title for safe TOML string interpolation
+ESCAPED_TITLE="${TITLE//\\/\\\\}"
+ESCAPED_TITLE="${ESCAPED_TITLE//\"/\\\"}"
+ESCAPED_TITLE="$(printf '%s' "$ESCAPED_TITLE" | tr '\n\r' '  ')"
+
 cat > "$DIR/index.md" << FRONTMATTER
 +++
-title = "$TITLE"
+title = "$ESCAPED_TITLE"
 description = ""
 date = $DATE
 
