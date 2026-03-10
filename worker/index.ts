@@ -41,12 +41,19 @@ Be concise, opinionated, and technically precise. Use short paragraphs. Don't he
 
 // ─── Crypto helpers ─────────────────────────────
 
+async function hmacKey(secret: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify'],
+  );
+}
+
 async function hmacSign(payload: string, secret: string): Promise<string> {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
-    'sign',
-  ]);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+  const key = await hmacKey(secret);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
   return btoa(String.fromCharCode(...new Uint8Array(sig)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -54,8 +61,9 @@ async function hmacSign(payload: string, secret: string): Promise<string> {
 }
 
 async function hmacVerify(payload: string, signature: string, secret: string): Promise<boolean> {
-  const expected = await hmacSign(payload, secret);
-  return expected === signature;
+  const key = await hmacKey(secret);
+  const sigBuf = base64UrlToArrayBuffer(signature);
+  return crypto.subtle.verify('HMAC', key, sigBuf, new TextEncoder().encode(payload));
 }
 
 function base64UrlEncode(data: string): string {
@@ -65,6 +73,15 @@ function base64UrlEncode(data: string): string {
 function base64UrlDecode(data: string): string {
   const padded = data.replace(/-/g, '+').replace(/_/g, '/');
   return atob(padded);
+}
+
+function base64UrlToArrayBuffer(b64url: string): ArrayBuffer {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+  const binary = atob(padded);
+  const buf = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+  return buf.buffer;
 }
 
 // ─── Session management ─────────────────────────
@@ -135,15 +152,6 @@ async function getJwks(issuer: string): Promise<JWK[]> {
   const data = (await res.json()) as { keys: JWK[] };
   cachedJwks = { keys: data.keys, fetchedAt: Date.now() };
   return data.keys;
-}
-
-function base64UrlToArrayBuffer(b64url: string): ArrayBuffer {
-  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-  const binary = atob(padded);
-  const buf = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
-  return buf.buffer;
 }
 
 async function verifyIdToken(
@@ -499,7 +507,19 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
 
 async function handleReindex(request: Request, env: Env): Promise<Response> {
   const secret = request.headers.get('X-Reindex-Secret');
-  if (!secret || secret !== env.REINDEX_SECRET) {
+  if (!secret) {
+    return jsonResponse({ error: 'unauthorized' }, 401);
+  }
+  const enc = new TextEncoder();
+  const a = enc.encode(secret);
+  const b = enc.encode(env.REINDEX_SECRET);
+  if (a.byteLength !== b.byteLength) {
+    return jsonResponse({ error: 'unauthorized' }, 401);
+  }
+  const key = await crypto.subtle.importKey('raw', crypto.getRandomValues(new Uint8Array(32)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  const sig = await crypto.subtle.sign('HMAC', key, a);
+  const valid = await crypto.subtle.verify('HMAC', key, sig, b);
+  if (!valid) {
     return jsonResponse({ error: 'unauthorized' }, 401);
   }
 
