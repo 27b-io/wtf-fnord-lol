@@ -41,12 +41,16 @@ Be concise, opinionated, and technically precise. Use short paragraphs. Don't he
 
 // ─── Crypto helpers ─────────────────────────────
 
-async function hmacSign(payload: string, secret: string): Promise<string> {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
+async function hmacKey(secret: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
     'sign',
+    'verify',
   ]);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+}
+
+async function hmacSign(payload: string, secret: string): Promise<string> {
+  const key = await hmacKey(secret);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
   return btoa(String.fromCharCode(...new Uint8Array(sig)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -54,8 +58,13 @@ async function hmacSign(payload: string, secret: string): Promise<string> {
 }
 
 async function hmacVerify(payload: string, signature: string, secret: string): Promise<boolean> {
-  const expected = await hmacSign(payload, secret);
-  return expected === signature;
+  try {
+    const key = await hmacKey(secret);
+    const sigBuf = base64UrlToArrayBuffer(signature);
+    return await crypto.subtle.verify('HMAC', key, sigBuf, new TextEncoder().encode(payload));
+  } catch {
+    return false;
+  }
 }
 
 function base64UrlEncode(data: string): string {
@@ -65,6 +74,15 @@ function base64UrlEncode(data: string): string {
 function base64UrlDecode(data: string): string {
   const padded = data.replace(/-/g, '+').replace(/_/g, '/');
   return atob(padded);
+}
+
+function base64UrlToArrayBuffer(b64url: string): ArrayBuffer {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+  const binary = atob(padded);
+  const buf = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+  return buf.buffer;
 }
 
 // ─── Session management ─────────────────────────
@@ -131,19 +149,20 @@ async function getJwks(issuer: string): Promise<JWK[]> {
   if (cachedJwks && Date.now() - cachedJwks.fetchedAt < 3600_000) {
     return cachedJwks.keys;
   }
-  const res = await fetch(`${issuer}/.well-known/jwks.json`);
-  const data = (await res.json()) as { keys: JWK[] };
-  cachedJwks = { keys: data.keys, fetchedAt: Date.now() };
-  return data.keys;
-}
-
-function base64UrlToArrayBuffer(b64url: string): ArrayBuffer {
-  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-  const binary = atob(padded);
-  const buf = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
-  return buf.buffer;
+  try {
+    const res = await fetch(`${issuer}/.well-known/jwks.json`);
+    if (!res.ok) throw new Error(`JWKS fetch failed: ${res.status}`);
+    const data = (await res.json()) as { keys: JWK[] };
+    if (!data.keys?.length) throw new Error('JWKS response has no keys');
+    cachedJwks = { keys: data.keys, fetchedAt: Date.now() };
+    return data.keys;
+  } catch (err) {
+    console.error('JWKS fetch error:', err);
+    if (cachedJwks && Date.now() - cachedJwks.fetchedAt < 86400_000) {
+      return cachedJwks.keys; // stale fallback, max 24h
+    }
+    throw err;
+  }
 }
 
 async function verifyIdToken(
@@ -159,6 +178,7 @@ async function verifyIdToken(
       kid?: string;
       alg: string;
     };
+    if (header.alg !== 'RS256') return null;
     const payload = JSON.parse(base64UrlDecode(parts[1])) as {
       sub: string;
       email?: string;
@@ -175,27 +195,37 @@ async function verifyIdToken(
 
     // Verify signature against JWKS
     const jwks = await getJwks(issuer);
-    const jwk = header.kid ? jwks.find((k) => k.kid === header.kid) : jwks[0];
-    if (!jwk) return null;
-
-    const cryptoKey = await crypto.subtle.importKey(
-      'jwk',
-      jwk as JsonWebKey,
-      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-      false,
-      ['verify'],
+    const candidates = jwks.filter(
+      (k) => (header.kid ? k.kid === header.kid : true) && (!k.alg || k.alg === 'RS256') && (!k.use || k.use === 'sig'),
     );
+    if (!candidates.length) return null;
 
-    const signatureValid = await crypto.subtle.verify(
-      'RSASSA-PKCS1-v1_5',
-      cryptoKey,
-      base64UrlToArrayBuffer(parts[2]),
-      new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
-    );
+    for (const jwk of candidates) {
+      try {
+        const cryptoKey = await crypto.subtle.importKey(
+          'jwk',
+          jwk as JsonWebKey,
+          { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+          false,
+          ['verify'],
+        );
 
-    if (!signatureValid) return null;
+        const signatureValid = await crypto.subtle.verify(
+          'RSASSA-PKCS1-v1_5',
+          cryptoKey,
+          base64UrlToArrayBuffer(parts[2]),
+          new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
+        );
 
-    return { sub: payload.sub, email: payload.email ?? payload.sub };
+        if (signatureValid) {
+          return { sub: payload.sub, email: payload.email ?? payload.sub };
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -203,18 +233,55 @@ async function verifyIdToken(
 
 // ─── Helpers ────────────────────────────────────
 
-function corsHeaders(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': '*',
+function safeReturnTo(value: string | null): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/';
+  try {
+    const decoded = decodeURIComponent(value);
+    if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.includes('\\') || /[\r\n]/.test(decoded))
+      return '/';
+  } catch {
+    return '/';
+  }
+  return value;
+}
+
+const ALLOWED_ORIGIN = 'https://wtf.fnord.lol';
+
+function corsHeaders(request?: Request): Record<string, string> {
+  const origin = request?.headers.get('Origin');
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Reindex-Secret',
+    Vary: 'Origin',
+  };
+  if (origin === ALLOWED_ORIGIN) {
+    headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGIN;
+  }
+  return headers;
+}
+
+function securityHeaders(): Record<string, string> {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   };
 }
 
-function jsonResponse(data: unknown, status = 200, extraHeaders?: Record<string, string>): Response {
+function jsonResponse(
+  data: unknown,
+  status = 200,
+  opts?: { headers?: Record<string, string>; request?: Request },
+): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(), ...extraHeaders },
+    headers: {
+      'Content-Type': 'application/json',
+      ...securityHeaders(),
+      ...corsHeaders(opts?.request),
+      ...opts?.headers,
+    },
   });
 }
 
@@ -244,7 +311,7 @@ function chunkText(text: string, maxChars = 1500): string[] {
 
 async function handleLogin(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get('returnTo') ?? '/';
+  const returnTo = safeReturnTo(url.searchParams.get('returnTo'));
 
   const state = base64UrlEncode(JSON.stringify({ returnTo, nonce: crypto.randomUUID() }));
   const codeVerifier = await generateCodeVerifier();
@@ -269,6 +336,7 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     headers: {
       Location: authUrl.toString(),
       'Set-Cookie': stateCookie,
+      ...securityHeaders(),
     },
   });
 }
@@ -280,25 +348,34 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   const error = url.searchParams.get('error');
 
   if (error) {
-    return new Response(`Auth error: ${error}`, { status: 400 });
+    console.error('OIDC error:', error, url.searchParams.get('error_description'));
+    return new Response('Authentication failed', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain', ...securityHeaders() },
+    });
   }
 
   if (!code || !state) {
-    return new Response('Missing code or state', { status: 400 });
+    return new Response('Missing code or state', { status: 400, headers: securityHeaders() });
   }
 
   // Verify state cookie
   const cookie = request.headers.get('Cookie');
   const stateMatch = cookie?.match(/wtf_auth_state=([^;]+)/);
   if (!stateMatch) {
-    return new Response('Missing auth state cookie', { status: 400 });
+    return new Response('Missing auth state cookie', { status: 400, headers: securityHeaders() });
   }
 
   const [encodedPayload, stateSig] = stateMatch[1].split('.');
-  const statePayload = base64UrlDecode(encodedPayload);
+  let statePayload: string;
+  try {
+    statePayload = base64UrlDecode(encodedPayload);
+  } catch {
+    return new Response('Invalid auth state', { status: 400, headers: securityHeaders() });
+  }
   const stateValid = await hmacVerify(statePayload, stateSig, env.SESSION_SECRET);
   if (!stateValid) {
-    return new Response('Invalid auth state', { status: 400 });
+    return new Response('Invalid auth state', { status: 400, headers: securityHeaders() });
   }
 
   const { state: savedState, codeVerifier } = JSON.parse(statePayload) as {
@@ -306,7 +383,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
     codeVerifier: string;
   };
   if (savedState !== state) {
-    return new Response('State mismatch', { status: 400 });
+    return new Response('State mismatch', { status: 400, headers: securityHeaders() });
   }
 
   // Exchange code for tokens
@@ -326,7 +403,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
     console.error('Token exchange failed:', text);
-    return new Response('Authentication failed', { status: 500 });
+    return new Response('Authentication failed', { status: 500, headers: securityHeaders() });
   }
 
   const tokens = (await tokenRes.json()) as {
@@ -338,7 +415,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   const claims = await verifyIdToken(tokens.id_token, env.OAUTH_ISSUER, env.OAUTH_CLIENT_ID);
 
   if (!claims) {
-    return new Response('Invalid ID token', { status: 400 });
+    return new Response('Invalid ID token', { status: 400, headers: securityHeaders() });
   }
 
   // Create session
@@ -353,7 +430,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   let returnTo = '/';
   try {
     const stateData = JSON.parse(base64UrlDecode(state)) as { returnTo?: string };
-    returnTo = stateData.returnTo ?? '/';
+    returnTo = safeReturnTo(stateData.returnTo ?? null);
   } catch {
     /* default */
   }
@@ -365,6 +442,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
       ['Location', returnTo],
       ['Set-Cookie', sessionCookie(sessionToken)],
       ['Set-Cookie', 'wtf_auth_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'],
+      ...(Object.entries(securityHeaders()) as [string, string][]),
     ]),
   });
 }
@@ -375,18 +453,19 @@ function handleLogout(): Response {
     headers: {
       Location: '/',
       'Set-Cookie': clearSessionCookie(),
+      ...securityHeaders(),
     },
   });
 }
 
 async function handleMe(request: Request, env: Env): Promise<Response> {
   const token = getSessionFromCookie(request);
-  if (!token) return jsonResponse({ error: 'not authenticated' }, 401);
+  if (!token) return jsonResponse({ error: 'not authenticated' }, 401, { request });
 
   const session = await verifySessionToken(token, env.SESSION_SECRET);
-  if (!session) return jsonResponse({ error: 'invalid session' }, 401);
+  if (!session) return jsonResponse({ error: 'invalid session' }, 401, { request });
 
-  return jsonResponse({ sub: session.sub, email: session.email });
+  return jsonResponse({ sub: session.sub, email: session.email }, 200, { request });
 }
 
 // ─── API Routes ─────────────────────────────────
@@ -405,7 +484,7 @@ async function handleSearch(request: Request, env: Env): Promise<Response> {
     limit = body.limit ?? 5;
   }
 
-  if (!query) return jsonResponse({ error: 'query required' }, 400);
+  if (!query) return jsonResponse({ error: 'query required' }, 400, { request });
 
   const vectors = await embed(env.AI, query);
   const matches = await env.VECTORIZE.query(vectors[0], {
@@ -421,18 +500,18 @@ async function handleSearch(request: Request, env: Env): Promise<Response> {
     score: m.score,
   }));
 
-  return jsonResponse({ results });
+  return jsonResponse({ results }, 200, { request });
 }
 
 async function handleChat(request: Request, env: Env): Promise<Response> {
   // Auth check
   const token = getSessionFromCookie(request);
   if (!token) {
-    return jsonResponse({ error: 'Sign in to discuss' }, 401);
+    return jsonResponse({ error: 'Sign in to discuss' }, 401, { request });
   }
   const session = await verifySessionToken(token, env.SESSION_SECRET);
   if (!session) {
-    return jsonResponse({ error: 'Sign in to discuss' }, 401);
+    return jsonResponse({ error: 'Sign in to discuss' }, 401, { request });
   }
 
   const body = await request.json<{
@@ -442,7 +521,7 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
   }>();
 
   if (!body.message || !body.slug) {
-    return jsonResponse({ error: 'message and slug required' }, 400);
+    return jsonResponse({ error: 'message and slug required' }, 400, { request });
   }
 
   // Embed and search for context
@@ -477,7 +556,13 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
   ];
 
   if (body.history) {
-    messages.push(...body.history.slice(-10));
+    const safeHistory = body.history
+      .filter(
+        (m): m is { role: 'user' | 'assistant'; content: string } =>
+          (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string',
+      )
+      .slice(-10);
+    messages.push(...safeHistory);
   }
 
   messages.push({ role: 'user', content: body.message });
@@ -492,15 +577,31 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      ...corsHeaders(),
+      ...securityHeaders(),
+      ...corsHeaders(request),
     },
   });
 }
 
 async function handleReindex(request: Request, env: Env): Promise<Response> {
   const secret = request.headers.get('X-Reindex-Secret');
-  if (!secret || secret !== env.REINDEX_SECRET) {
-    return jsonResponse({ error: 'unauthorized' }, 401);
+  if (!secret) {
+    return jsonResponse({ error: 'unauthorized' }, 401, { request });
+  }
+  const enc = new TextEncoder();
+  const a = enc.encode(secret);
+  const b = enc.encode(env.REINDEX_SECRET);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    crypto.getRandomValues(new Uint8Array(32)),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, a);
+  const valid = await crypto.subtle.verify('HMAC', key, sig, b);
+  if (!valid) {
+    return jsonResponse({ error: 'unauthorized' }, 401, { request });
   }
 
   const body = await request.json<{
@@ -508,7 +609,7 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
   }>();
 
   if (!body.posts?.length) {
-    return jsonResponse({ error: 'posts array required' }, 400);
+    return jsonResponse({ error: 'posts array required' }, 400, { request });
   }
 
   let totalVectors = 0;
@@ -537,7 +638,7 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  return jsonResponse({ indexed: totalVectors, posts: body.posts.length });
+  return jsonResponse({ indexed: totalVectors, posts: body.posts.length }, 200, { request });
 }
 
 // ─── Main Handler ───────────────────────────────
@@ -548,7 +649,7 @@ export default {
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      return new Response(null, { status: 204, headers: { ...securityHeaders(), ...corsHeaders(request) } });
     }
 
     // Auth routes
@@ -580,16 +681,14 @@ export default {
     }
 
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
-      return jsonResponse({ error: 'not found' }, 404);
+      return jsonResponse({ error: 'not found' }, 404, { request });
     }
 
     // Static assets
     try {
       const response = await env.ASSETS.fetch(request);
       const headers = new Headers(response.headers);
-      headers.set('X-Content-Type-Options', 'nosniff');
-      headers.set('X-Frame-Options', 'DENY');
-      headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+      for (const [k, v] of Object.entries(securityHeaders())) headers.set(k, v);
 
       return new Response(response.body, {
         status: response.status,
@@ -597,7 +696,7 @@ export default {
       });
     } catch (err) {
       console.error(`Asset fetch failed: ${url.pathname}`, err);
-      return new Response('Not Found', { status: 404 });
+      return new Response('Not Found', { status: 404, headers: securityHeaders() });
     }
   },
 } satisfies ExportedHandler<Env>;

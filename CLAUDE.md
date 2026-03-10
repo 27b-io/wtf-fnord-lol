@@ -40,6 +40,7 @@ zola check             # validates content/templates
 ### Worker (`worker/index.ts`) — single file, no framework
 
 The worker is a monolith handling:
+
 - **Static asset serving** via the `ASSETS` binding with security headers
 - **Semantic search** (`/api/search`) — embeds query with `@cf/baai/bge-base-en-v1.5`, queries Vectorize
 - **Auth-gated chat** (`/api/chat`) — RAG chat with Stev3 persona using `@cf/meta/llama-3.1-8b-instruct-fp8`, streams SSE responses
@@ -51,6 +52,7 @@ Env bindings: `ASSETS`, `AI`, `VECTORIZE`, `REINDEX_SECRET`, `OAUTH_CLIENT_ID`, 
 ### Content authoring (`content/deep-dives/`)
 
 Posts use TOML frontmatter (`+++`), taxonomies (`tags`, `series`), and custom Zola shortcodes:
+
 - `{% callout(type="tldr|insight|warning|question") %}...{% end %}`
 - `{{ glossary(term="FOO", def="explanation") }}`
 - `{{ cite(key="ref1", text="Author 2026") }}`
@@ -61,6 +63,7 @@ Posts use TOML frontmatter (`+++`), taxonomies (`tags`, `series`), and custom Zo
 ### Templates
 
 Tera templates in `templates/`. Key structure:
+
 - `base.html` — shell with header, nav, search partial, footer
 - `page.html` — article layout with TOC sidebar, post metadata, chat widget
 - `partials/search.html` — client-side semantic search (debounced, keyboard nav)
