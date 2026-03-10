@@ -148,10 +148,20 @@ async function getJwks(issuer: string): Promise<JWK[]> {
   if (cachedJwks && Date.now() - cachedJwks.fetchedAt < 3600_000) {
     return cachedJwks.keys;
   }
-  const res = await fetch(`${issuer}/.well-known/jwks.json`);
-  const data = (await res.json()) as { keys: JWK[] };
-  cachedJwks = { keys: data.keys, fetchedAt: Date.now() };
-  return data.keys;
+  try {
+    const res = await fetch(`${issuer}/.well-known/jwks.json`);
+    if (!res.ok) throw new Error(`JWKS fetch failed: ${res.status}`);
+    const data = (await res.json()) as { keys: JWK[] };
+    if (!data.keys?.length) throw new Error('JWKS response has no keys');
+    cachedJwks = { keys: data.keys, fetchedAt: Date.now() };
+    return data.keys;
+  } catch (err) {
+    console.error('JWKS fetch error:', err);
+    if (cachedJwks && Date.now() - cachedJwks.fetchedAt < 86400_000) {
+      return cachedJwks.keys; // stale fallback, max 24h
+    }
+    throw err;
+  }
 }
 
 async function verifyIdToken(
@@ -167,6 +177,7 @@ async function verifyIdToken(
       kid?: string;
       alg: string;
     };
+    if (header.alg !== 'RS256') return null;
     const payload = JSON.parse(base64UrlDecode(parts[1])) as {
       sub: string;
       email?: string;
@@ -183,7 +194,11 @@ async function verifyIdToken(
 
     // Verify signature against JWKS
     const jwks = await getJwks(issuer);
-    const jwk = header.kid ? jwks.find((k) => k.kid === header.kid) : jwks[0];
+    const jwk = jwks.find((k) =>
+      (header.kid ? k.kid === header.kid : true) &&
+      (!k.alg || k.alg === 'RS256') &&
+      (!k.use || k.use === 'sig')
+    );
     if (!jwk) return null;
 
     const cryptoKey = await crypto.subtle.importKey(
@@ -314,7 +329,8 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   const error = url.searchParams.get('error');
 
   if (error) {
-    return new Response(`Auth error: ${error}`, { status: 400 });
+    console.error('OIDC error:', error, url.searchParams.get('error_description'));
+    return new Response('Authentication failed', { status: 400, headers: { 'Content-Type': 'text/plain', ...securityHeaders() } });
   }
 
   if (!code || !state) {
