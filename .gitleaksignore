@@ -1,0 +1,3 @@
+# gitleaksignore — allowlist for false positives
+# Zola shortcode cite() keys are not API keys; gitleaks entropy-matches them
+content/deep-dives/multi-artifact-output/index.md:generic-api-key:249
