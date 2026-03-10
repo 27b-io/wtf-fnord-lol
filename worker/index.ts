@@ -58,9 +58,13 @@ async function hmacSign(payload: string, secret: string): Promise<string> {
 }
 
 async function hmacVerify(payload: string, signature: string, secret: string): Promise<boolean> {
-  const key = await hmacKey(secret);
-  const sigBuf = base64UrlToArrayBuffer(signature);
-  return crypto.subtle.verify('HMAC', key, sigBuf, new TextEncoder().encode(payload));
+  try {
+    const key = await hmacKey(secret);
+    const sigBuf = base64UrlToArrayBuffer(signature);
+    return await crypto.subtle.verify('HMAC', key, sigBuf, new TextEncoder().encode(payload));
+  } catch {
+    return false;
+  }
 }
 
 function base64UrlEncode(data: string): string {
@@ -191,29 +195,37 @@ async function verifyIdToken(
 
     // Verify signature against JWKS
     const jwks = await getJwks(issuer);
-    const jwk = jwks.find(
+    const candidates = jwks.filter(
       (k) => (header.kid ? k.kid === header.kid : true) && (!k.alg || k.alg === 'RS256') && (!k.use || k.use === 'sig'),
     );
-    if (!jwk) return null;
+    if (!candidates.length) return null;
 
-    const cryptoKey = await crypto.subtle.importKey(
-      'jwk',
-      jwk as JsonWebKey,
-      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-      false,
-      ['verify'],
-    );
+    for (const jwk of candidates) {
+      try {
+        const cryptoKey = await crypto.subtle.importKey(
+          'jwk',
+          jwk as JsonWebKey,
+          { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+          false,
+          ['verify'],
+        );
 
-    const signatureValid = await crypto.subtle.verify(
-      'RSASSA-PKCS1-v1_5',
-      cryptoKey,
-      base64UrlToArrayBuffer(parts[2]),
-      new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
-    );
+        const signatureValid = await crypto.subtle.verify(
+          'RSASSA-PKCS1-v1_5',
+          cryptoKey,
+          base64UrlToArrayBuffer(parts[2]),
+          new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
+        );
 
-    if (!signatureValid) return null;
+        if (signatureValid) {
+          return { sub: payload.sub, email: payload.email ?? payload.sub };
+        }
+      } catch {
+        continue;
+      }
+    }
 
-    return { sub: payload.sub, email: payload.email ?? payload.sub };
+    return null;
   } catch {
     return null;
   }
@@ -225,7 +237,8 @@ function safeReturnTo(value: string | null): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/';
   try {
     const decoded = decodeURIComponent(value);
-    if (decoded.startsWith('//') || /[\r\n]/.test(decoded)) return '/';
+    if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.includes('\\') || /[\r\n]/.test(decoded))
+      return '/';
   } catch {
     return '/';
   }
@@ -573,9 +586,6 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
   const enc = new TextEncoder();
   const a = enc.encode(secret);
   const b = enc.encode(env.REINDEX_SECRET);
-  if (a.byteLength !== b.byteLength) {
-    return jsonResponse({ error: 'unauthorized' }, 401, { request });
-  }
   const key = await crypto.subtle.importKey(
     'raw',
     crypto.getRandomValues(new Uint8Array(32)),
