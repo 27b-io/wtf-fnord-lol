@@ -1,0 +1,4 @@
+# gitleaksignore — allowlist for false positives
+# Zola shortcode cite() keys are not API keys; gitleaks entropy-matches them.
+# Fingerprint for the false positive on the 'shap-2017' key.
+content/deep-dives/multi-artifact-output/index.md:generic-api-key:249
