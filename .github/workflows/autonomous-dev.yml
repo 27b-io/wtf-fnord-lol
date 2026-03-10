@@ -1,0 +1,24 @@
+# Thin caller — copy to <repo>/.github/workflows/autonomous-dev.yml
+# Update the SHA reference when autonomous-executor.yml changes in 27b-io/shared-workflows
+name: Autonomous Dev
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  execute:
+    uses: 27b-io/shared-workflows/.github/workflows/autonomous-executor.yml@56ccfaef7233dcdc60dff3639fb329111151b955
+    with:
+      issue_number: ${{ inputs.issue_number }}
+      repo: ${{ github.event.repository.name }}
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
