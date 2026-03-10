@@ -56,7 +56,7 @@ The {{ glossary(term="rate of change", def="In behavioral analytics: how quickly
 
 ### What Gets Three Windows?
 
-Everything. That's the discipline of this approach. It's tempting to apply multi-window aggregation only to "interesting" metrics, but the value comes from doing it uniformly:
+Everything. That's the discipline of this approach. It's_tempting to apply multi-window aggregation only to "interesting" metrics, but the value comes from doing it uniformly:
 
 - **Activity counts:** sessions started, content items consumed, searches performed
 - **Duration metrics:** session length, time on content type, days since last event
