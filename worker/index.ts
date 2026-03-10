@@ -529,7 +529,13 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
   ];
 
   if (body.history) {
-    messages.push(...body.history.slice(-10));
+    const safeHistory = body.history
+      .filter(
+        (m): m is { role: 'user' | 'assistant'; content: string } =>
+          (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string',
+      )
+      .slice(-10);
+    messages.push(...safeHistory);
   }
 
   messages.push({ role: 'user', content: body.message });
