@@ -211,18 +211,43 @@ async function verifyIdToken(
 
 // ─── Helpers ────────────────────────────────────
 
-function corsHeaders(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': '*',
+function safeReturnTo(value: string | null): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/';
+  try {
+    const decoded = decodeURIComponent(value);
+    if (decoded.startsWith('//')) return '/';
+  } catch { return '/'; }
+  return value;
+}
+
+const ALLOWED_ORIGIN = 'https://wtf.fnord.lol';
+
+function corsHeaders(request?: Request): Record<string, string> {
+  const origin = request?.headers.get('Origin');
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Reindex-Secret',
+    Vary: 'Origin',
+  };
+  if (origin === ALLOWED_ORIGIN) {
+    headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGIN;
+  }
+  return headers;
+}
+
+function securityHeaders(): Record<string, string> {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   };
 }
 
-function jsonResponse(data: unknown, status = 200, extraHeaders?: Record<string, string>): Response {
+function jsonResponse(data: unknown, status = 200, opts?: { headers?: Record<string, string>; request?: Request }): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(), ...extraHeaders },
+    headers: { 'Content-Type': 'application/json', ...securityHeaders(), ...corsHeaders(opts?.request), ...opts?.headers },
   });
 }
 
@@ -252,7 +277,7 @@ function chunkText(text: string, maxChars = 1500): string[] {
 
 async function handleLogin(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get('returnTo') ?? '/';
+  const returnTo = safeReturnTo(url.searchParams.get('returnTo'));
 
   const state = base64UrlEncode(JSON.stringify({ returnTo, nonce: crypto.randomUUID() }));
   const codeVerifier = await generateCodeVerifier();
@@ -277,6 +302,7 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     headers: {
       Location: authUrl.toString(),
       'Set-Cookie': stateCookie,
+      ...securityHeaders(),
     },
   });
 }
@@ -361,7 +387,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   let returnTo = '/';
   try {
     const stateData = JSON.parse(base64UrlDecode(state)) as { returnTo?: string };
-    returnTo = stateData.returnTo ?? '/';
+    returnTo = safeReturnTo(stateData.returnTo ?? null);
   } catch {
     /* default */
   }
@@ -373,6 +399,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
       ['Location', returnTo],
       ['Set-Cookie', sessionCookie(sessionToken)],
       ['Set-Cookie', 'wtf_auth_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'],
+      ...Object.entries(securityHeaders()) as [string, string][],
     ]),
   });
 }
@@ -383,18 +410,19 @@ function handleLogout(): Response {
     headers: {
       Location: '/',
       'Set-Cookie': clearSessionCookie(),
+      ...securityHeaders(),
     },
   });
 }
 
 async function handleMe(request: Request, env: Env): Promise<Response> {
   const token = getSessionFromCookie(request);
-  if (!token) return jsonResponse({ error: 'not authenticated' }, 401);
+  if (!token) return jsonResponse({ error: 'not authenticated' }, 401, { request });
 
   const session = await verifySessionToken(token, env.SESSION_SECRET);
-  if (!session) return jsonResponse({ error: 'invalid session' }, 401);
+  if (!session) return jsonResponse({ error: 'invalid session' }, 401, { request });
 
-  return jsonResponse({ sub: session.sub, email: session.email });
+  return jsonResponse({ sub: session.sub, email: session.email }, 200, { request });
 }
 
 // ─── API Routes ─────────────────────────────────
@@ -413,7 +441,7 @@ async function handleSearch(request: Request, env: Env): Promise<Response> {
     limit = body.limit ?? 5;
   }
 
-  if (!query) return jsonResponse({ error: 'query required' }, 400);
+  if (!query) return jsonResponse({ error: 'query required' }, 400, { request });
 
   const vectors = await embed(env.AI, query);
   const matches = await env.VECTORIZE.query(vectors[0], {
@@ -429,18 +457,18 @@ async function handleSearch(request: Request, env: Env): Promise<Response> {
     score: m.score,
   }));
 
-  return jsonResponse({ results });
+  return jsonResponse({ results }, 200, { request });
 }
 
 async function handleChat(request: Request, env: Env): Promise<Response> {
   // Auth check
   const token = getSessionFromCookie(request);
   if (!token) {
-    return jsonResponse({ error: 'Sign in to discuss' }, 401);
+    return jsonResponse({ error: 'Sign in to discuss' }, 401, { request });
   }
   const session = await verifySessionToken(token, env.SESSION_SECRET);
   if (!session) {
-    return jsonResponse({ error: 'Sign in to discuss' }, 401);
+    return jsonResponse({ error: 'Sign in to discuss' }, 401, { request });
   }
 
   const body = await request.json<{
@@ -450,7 +478,7 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
   }>();
 
   if (!body.message || !body.slug) {
-    return jsonResponse({ error: 'message and slug required' }, 400);
+    return jsonResponse({ error: 'message and slug required' }, 400, { request });
   }
 
   // Embed and search for context
@@ -500,7 +528,8 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      ...corsHeaders(),
+      ...securityHeaders(),
+      ...corsHeaders(request),
     },
   });
 }
@@ -508,19 +537,19 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
 async function handleReindex(request: Request, env: Env): Promise<Response> {
   const secret = request.headers.get('X-Reindex-Secret');
   if (!secret) {
-    return jsonResponse({ error: 'unauthorized' }, 401);
+    return jsonResponse({ error: 'unauthorized' }, 401, { request });
   }
   const enc = new TextEncoder();
   const a = enc.encode(secret);
   const b = enc.encode(env.REINDEX_SECRET);
   if (a.byteLength !== b.byteLength) {
-    return jsonResponse({ error: 'unauthorized' }, 401);
+    return jsonResponse({ error: 'unauthorized' }, 401, { request });
   }
   const key = await crypto.subtle.importKey('raw', crypto.getRandomValues(new Uint8Array(32)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
   const sig = await crypto.subtle.sign('HMAC', key, a);
   const valid = await crypto.subtle.verify('HMAC', key, sig, b);
   if (!valid) {
-    return jsonResponse({ error: 'unauthorized' }, 401);
+    return jsonResponse({ error: 'unauthorized' }, 401, { request });
   }
 
   const body = await request.json<{
@@ -528,7 +557,7 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
   }>();
 
   if (!body.posts?.length) {
-    return jsonResponse({ error: 'posts array required' }, 400);
+    return jsonResponse({ error: 'posts array required' }, 400, { request });
   }
 
   let totalVectors = 0;
@@ -557,7 +586,7 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  return jsonResponse({ indexed: totalVectors, posts: body.posts.length });
+  return jsonResponse({ indexed: totalVectors, posts: body.posts.length }, 200, { request });
 }
 
 // ─── Main Handler ───────────────────────────────
@@ -568,7 +597,7 @@ export default {
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      return new Response(null, { status: 204, headers: { ...securityHeaders(), ...corsHeaders(request) } });
     }
 
     // Auth routes
@@ -600,16 +629,14 @@ export default {
     }
 
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
-      return jsonResponse({ error: 'not found' }, 404);
+      return jsonResponse({ error: 'not found' }, 404, { request });
     }
 
     // Static assets
     try {
       const response = await env.ASSETS.fetch(request);
       const headers = new Headers(response.headers);
-      headers.set('X-Content-Type-Options', 'nosniff');
-      headers.set('X-Frame-Options', 'DENY');
-      headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+      Object.entries(securityHeaders()).forEach(([k, v]) => headers.set(k, v));
 
       return new Response(response.body, {
         status: response.status,
