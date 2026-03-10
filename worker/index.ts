@@ -673,7 +673,7 @@ export default {
     try {
       const response = await env.ASSETS.fetch(request);
       const headers = new Headers(response.headers);
-      Object.entries(securityHeaders()).forEach(([k, v]) => headers.set(k, v));
+      for (const [k, v] of Object.entries(securityHeaders())) headers.set(k, v);
 
       return new Response(response.body, {
         status: response.status,
