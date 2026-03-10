@@ -42,13 +42,10 @@ Be concise, opinionated, and technically precise. Use short paragraphs. Don't he
 // ─── Crypto helpers ─────────────────────────────
 
 async function hmacKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify'],
-  );
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+    'verify',
+  ]);
 }
 
 async function hmacSign(payload: string, secret: string): Promise<string> {
@@ -194,10 +191,8 @@ async function verifyIdToken(
 
     // Verify signature against JWKS
     const jwks = await getJwks(issuer);
-    const jwk = jwks.find((k) =>
-      (header.kid ? k.kid === header.kid : true) &&
-      (!k.alg || k.alg === 'RS256') &&
-      (!k.use || k.use === 'sig')
+    const jwk = jwks.find(
+      (k) => (header.kid ? k.kid === header.kid : true) && (!k.alg || k.alg === 'RS256') && (!k.use || k.use === 'sig'),
     );
     if (!jwk) return null;
 
@@ -230,8 +225,10 @@ function safeReturnTo(value: string | null): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/';
   try {
     const decoded = decodeURIComponent(value);
-    if (decoded.startsWith('//')) return '/';
-  } catch { return '/'; }
+    if (decoded.startsWith('//') || /[\r\n]/.test(decoded)) return '/';
+  } catch {
+    return '/';
+  }
   return value;
 }
 
@@ -259,10 +256,19 @@ function securityHeaders(): Record<string, string> {
   };
 }
 
-function jsonResponse(data: unknown, status = 200, opts?: { headers?: Record<string, string>; request?: Request }): Response {
+function jsonResponse(
+  data: unknown,
+  status = 200,
+  opts?: { headers?: Record<string, string>; request?: Request },
+): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...securityHeaders(), ...corsHeaders(opts?.request), ...opts?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...securityHeaders(),
+      ...corsHeaders(opts?.request),
+      ...opts?.headers,
+    },
   });
 }
 
@@ -330,7 +336,10 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
 
   if (error) {
     console.error('OIDC error:', error, url.searchParams.get('error_description'));
-    return new Response('Authentication failed', { status: 400, headers: { 'Content-Type': 'text/plain', ...securityHeaders() } });
+    return new Response('Authentication failed', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain', ...securityHeaders() },
+    });
   }
 
   if (!code || !state) {
@@ -415,7 +424,7 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
       ['Location', returnTo],
       ['Set-Cookie', sessionCookie(sessionToken)],
       ['Set-Cookie', 'wtf_auth_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'],
-      ...Object.entries(securityHeaders()) as [string, string][],
+      ...(Object.entries(securityHeaders()) as [string, string][]),
     ]),
   });
 }
@@ -567,7 +576,13 @@ async function handleReindex(request: Request, env: Env): Promise<Response> {
   if (a.byteLength !== b.byteLength) {
     return jsonResponse({ error: 'unauthorized' }, 401, { request });
   }
-  const key = await crypto.subtle.importKey('raw', crypto.getRandomValues(new Uint8Array(32)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    crypto.getRandomValues(new Uint8Array(32)),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify'],
+  );
   const sig = await crypto.subtle.sign('HMAC', key, a);
   const valid = await crypto.subtle.verify('HMAC', key, sig, b);
   if (!valid) {

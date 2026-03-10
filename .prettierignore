@@ -1,0 +1,7 @@
+public/
+node_modules/
+content/
+templates/
+sass/
+static/
+.wrangler/
