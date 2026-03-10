@@ -367,7 +367,12 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   }
 
   const [encodedPayload, stateSig] = stateMatch[1].split('.');
-  const statePayload = base64UrlDecode(encodedPayload);
+  let statePayload: string;
+  try {
+    statePayload = base64UrlDecode(encodedPayload);
+  } catch {
+    return new Response('Invalid auth state', { status: 400, headers: securityHeaders() });
+  }
   const stateValid = await hmacVerify(statePayload, stateSig, env.SESSION_SECRET);
   if (!stateValid) {
     return new Response('Invalid auth state', { status: 400, headers: securityHeaders() });
