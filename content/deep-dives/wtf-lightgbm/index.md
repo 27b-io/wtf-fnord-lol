@@ -44,7 +44,7 @@ Then there's **GOSS** (keep all the high-error data points, randomly sample the 
 
 ## When to Use It (and When Not To)
 
-**Use LightGBM for:** tabular data with named features. Ranking (native {{ glossary(term="LambdaRank", def="A listwise learning-to-rank algorithm that optimises pairwise ranking loss weighted by the change in NDCG from swapping two items.") }} support). Classification and regression. Anything where you want fast iteration — training is minutes, HPT is overnight.
+**Use LightGBM for:** tabular data with named features. Ranking (native {{ glossary(term="LambdaRank", def="A listwise learning-to-rank algorithm that optimises pairwise ranking loss weighted by the change in NDCG from swapping two items.") }} support). Classification and regression. Anything where you want fast iteration — training is minutes, {{ glossary(term="hyperparameter tuning", def="Systematically searching for the best model configuration (learning rate, tree depth, regularisation, etc.) using techniques like Bayesian optimisation or random search.") }} is overnight.
 
 **Don't use LightGBM for:** raw text, images, or audio (no sequential/spatial awareness — you need embeddings first). Learning representations (it operates on pre-computed features, it can't discover that features 47 and 203 together mean something). Very small datasets (leaf-wise growth memorises 500 rows).
 
@@ -84,10 +84,10 @@ If your validation AUC looks great but production metrics are garbage, reduce `n
 
 ### The `free_raw_data` Disaster
 
-By default, LightGBM frees the underlying dataset memory after training. Fine for one model. Catastrophic when training multiple models on the same dataset — your second classifier trains on freed memory and produces garbage. There's no error message. The model just silently becomes useless. Set `free_raw_data=False`.
+By default, LightGBM frees the underlying dataset memory after training a booster. Fine for one model. When training multiple models on the same dataset, your second classifier trains on freed memory and silently produces garbage — no error, no warning, just useless predictions.
 
 {% callout(type="warning") %}
-This default has caused more silent production bugs than any other LightGBM parameter. If you're training multiple objectives on the same data, set `free_raw_data=False` before you learn this the hard way.
+Set `free_raw_data=False` if you're training multiple objectives on the same data. This default has caused more silent production bugs than any other LightGBM parameter.
 {% end %}
 
 ### Categorical Cardinality Limits
@@ -108,4 +108,4 @@ If you're upgrading from 3.x to 4.5+, feature importance values change even with
 
 **Skip it if:** your features don't exist yet. If the signal is in raw text, images, or interaction sequences, you need a representation learner first.
 
-"For now" is doing more work in that sentence than it used to.
+The best model for tabular data in 2026? Still a gradient-boosted tree, for now. But "for now" is doing more work in that sentence than it used to.
