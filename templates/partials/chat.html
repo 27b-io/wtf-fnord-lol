@@ -131,6 +131,24 @@
     try { localStorage.setItem(storageKey, JSON.stringify(history.slice(-20))); } catch {}
   }
 
+  function getVisibleText() {
+    const selection = window.getSelection()?.toString()?.trim();
+    if (selection) return { selection: selection.slice(0, 2000) };
+
+    // No selection — grab visible paragraph content
+    const paragraphs = document.querySelectorAll('.prose p, .prose li, .prose h2, .prose h3, .prose blockquote');
+    const visible = [];
+    for (const el of paragraphs) {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        const t = el.textContent?.trim();
+        if (t) visible.push(t);
+      }
+    }
+    const text = visible.join('\n\n').slice(0, 3000);
+    return text ? { visibleContent: text } : {};
+  }
+
   async function sendMessage() {
     const text = input.value.trim();
     if (!text || isStreaming) return;
@@ -151,7 +169,13 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, slug, history: history.slice(-10) }),
+        body: JSON.stringify({
+          message: text,
+          slug,
+          history: history.slice(-10),
+          title: document.querySelector('h1')?.textContent?.trim() || undefined,
+          ...getVisibleText(),
+        }),
       });
 
       if (res.status === 401) {
