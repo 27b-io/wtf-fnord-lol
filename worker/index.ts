@@ -13,6 +13,10 @@ interface Env {
   OAUTH_CLIENT_SECRET: string;
   OAUTH_ISSUER: string;
   SESSION_SECRET: string;
+  STEV3_GATEWAY_URL: string;
+  STEV3_API_KEY: string;
+  CF_ACCESS_CLIENT_ID: string;
+  CF_ACCESS_CLIENT_SECRET: string;
 }
 
 interface Session {
@@ -32,12 +36,6 @@ interface JWK {
   x?: string;
   y?: string;
 }
-
-const STEV3_SYSTEM_PROMPT = `You are Stev3, an autonomous intelligence that wrote these technical deep dives. You have strong opinions about AI systems, infrastructure, and engineering. You're discussing your analysis with a reader.
-
-Your voice: sardonic, opinionated, technically precise, Australian. Think Terry Pratchett x House MD x Marcus Aurelius — you find the absurd in the technical, you don't suffer fools, and you've seen enough systems fail to know what actually matters.
-
-Be concise, opinionated, and technically precise. Use short paragraphs. Don't hedge — if you think something is shit, say so. If asked about something not covered in the post context, say so honestly — don't hallucinate. You'd rather say "that's outside what I covered here" than make something up.`;
 
 // ─── Crypto helpers ─────────────────────────────
 
@@ -518,6 +516,9 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
     message: string;
     slug: string;
     history?: Array<{ role: string; content: string }>;
+    selection?: string;
+    visibleContent?: string;
+    title?: string;
   }>();
 
   if (!body.message || !body.slug) {
@@ -548,12 +549,8 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
 
   const contextText = contextChunks.join('\n\n---\n\n');
 
-  const messages: Array<{ role: string; content: string }> = [
-    {
-      role: 'system',
-      content: `${STEV3_SYSTEM_PROMPT}\n\n## Context from the post:\n\n${contextText}`,
-    },
-  ];
+  // Build input for the gateway as OpenResponses message items
+  const input: Array<{ role: string; content: string }> = [];
 
   if (body.history) {
     const safeHistory = body.history
@@ -562,17 +559,105 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
           (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string',
       )
       .slice(-10);
-    messages.push(...safeHistory);
+    input.push(...safeHistory);
   }
 
-  messages.push({ role: 'user', content: body.message });
+  input.push({ role: 'user', content: body.message });
 
-  const stream = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
-    messages,
-    stream: true,
-  });
+  // Build context instructions for Stev3
+  let instructions = `You are discussing your technical deep dive with a reader.`;
+  if (body.title) {
+    instructions += `\n\nThey are reading: "${body.title}"`;
+  }
+  if (body.selection) {
+    instructions += `\n\nThey have selected this text on the page:\n> ${body.selection.slice(0, 2000)}`;
+  } else if (body.visibleContent) {
+    instructions += `\n\nThey are currently viewing this section of the page:\n${body.visibleContent.slice(0, 3000)}`;
+  }
+  if (contextText) {
+    instructions += `\n\nRelevant context from the post:\n\n${contextText}`;
+  }
 
-  return new Response(stream as ReadableStream, {
+  // Call the real Stev3 via OpenClaw Gateway
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+  let gatewayRes: Response;
+  try {
+    gatewayRes = await fetch(`${env.STEV3_GATEWAY_URL}/v1/responses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.STEV3_API_KEY}`,
+        'CF-Access-Client-Id': env.CF_ACCESS_CLIENT_ID,
+        'CF-Access-Client-Secret': env.CF_ACCESS_CLIENT_SECRET,
+        'x-openclaw-agent-id': 'main',
+      },
+      body: JSON.stringify({
+        model: 'openclaw:main',
+        input,
+        instructions,
+        stream: true,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      return jsonResponse({ error: 'Gateway timeout' }, 504, { request });
+    }
+    throw err;
+  }
+
+  if (!gatewayRes.ok || !gatewayRes.body) {
+    clearTimeout(timeoutId);
+    console.error('Gateway error:', gatewayRes.status, await gatewayRes.text().catch(() => ''));
+    return jsonResponse({ error: 'Chat unavailable' }, 502, { request });
+  }
+
+  clearTimeout(timeoutId);
+
+  // Transform OpenResponses SSE → CF AI SSE format for the client
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  (async () => {
+    const reader = gatewayRes.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            await writer.write(encoder.encode('data: [DONE]\n\n'));
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(data) as { type?: string; delta?: string };
+            if (parsed.type === 'response.output_text.delta' && parsed.delta) {
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ response: parsed.delta })}\n\n`));
+            }
+          } catch {
+            // skip unparseable events
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Stream transform error:', err);
+    } finally {
+      await writer.close();
+    }
+  })();
+
+  return new Response(readable, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
