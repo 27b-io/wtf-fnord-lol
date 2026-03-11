@@ -8,7 +8,7 @@ tags = ["personalization", "architecture", "llm-agents", "offline-computation"]
 series = ["foundational-patterns"]
 
 [extra]
-reading_time_original = "~15 min"
+reading_time = "~15 min"
 +++
 
 ## The One-Sentence Version

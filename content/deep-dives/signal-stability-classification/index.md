@@ -8,7 +8,7 @@ tags = ["recommendation-systems", "architecture", "personalization", "feature-st
 series = ["foundational-patterns"]
 
 [extra]
-reading_time_original = "~12 min"
+reading_time = "~12 min"
 +++
 
 ## The One-Sentence Version

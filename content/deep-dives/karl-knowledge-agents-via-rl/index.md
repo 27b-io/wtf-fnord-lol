@@ -10,7 +10,7 @@ series = ["paper-deep-dives"]
 [extra]
 paper_url = "https://arxiv.org/abs/2603.05218"
 paper_date = "2026-03-05"
-reading_time_original = "77 pages"
+reading_time = "77 pages"
 +++
 
 ## The One-Sentence Version

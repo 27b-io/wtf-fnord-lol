@@ -9,6 +9,7 @@ on:
       - 'sass/**'
       - 'static/**'
       - 'worker/**'
+      - 'scripts/**'
       - 'config.toml'
       - 'wrangler.toml'
 

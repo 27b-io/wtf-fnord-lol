@@ -8,7 +8,7 @@ tags = ["personalization", "llm-capabilities", "cross-modal-inference", "recomme
 series = ["deep-dives"]
 
 [extra]
-reading_time_original = "~10 min"
+reading_time = "~10 min"
 +++
 
 ## The One-Sentence Version
