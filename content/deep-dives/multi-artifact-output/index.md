@@ -1,7 +1,7 @@
 +++
 title = "The Multi-Artifact Output Pattern"
 description = "One LLM call, multiple output shapes for multiple consumers. Design your schema like a protocol, not an afterthought."
-date = 2026-03-10
+date = 2026-03-10T12:00:00+11:00
 
 [taxonomies]
 tags = ["architecture", "structured-output", "llm-integration", "api-design"]

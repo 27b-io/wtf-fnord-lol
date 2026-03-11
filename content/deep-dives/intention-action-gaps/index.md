@@ -1,7 +1,7 @@
 +++
 title = "Intention-Action Gaps as Behavioral Signals"
 description = "What you say you'll do vs what you actually do — the gap is the insight."
-date = 2026-03-10
+date = 2026-03-10T11:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "behavioral-analytics", "product-design", "ethics"]
@@ -67,7 +67,7 @@ A gap that's *diverging* — getting larger — suggests one of two things: eith
 
 A gap that stays constant is the most ambiguous: they're consistently falling short by the same amount. Could be a chronic mismatch between aspiration and reality. Could be a measurement artifact. Could be that the "gap" is actually working as a kind of buffer — they set the intention high on purpose, knowing they'll hit 80% of it.
 
-{% cite(title="Losing Control: How and Why People Fail at Self-Regulation", authors="Baumeister, R. F., Heatherton, T. F., & Tice, D. M.", year="1994", url="https://psycnet.apa.org/record/1994-97093-000") %}
+{{ cite(key="baumeister1994", title="Losing Control: How and Why People Fail at Self-Regulation", authors="Baumeister, R. F., Heatherton, T. F., & Tice, D. M.", year="1994", url="https://psycnet.apa.org/record/1994-97093-000") }}
 
 ## The {{ glossary(term="stated vs observed", def="The distinction between what a user explicitly reports (preferences, intentions, goals) and what behavioral data shows they actually do. Core tension in personalization system design.") }} Distinction Isn't New — But We Keep Ignoring It
 
@@ -75,7 +75,7 @@ Survey researchers have known about this for decades. When you ask people what t
 
 What's new here is the *temporal* structure. Traditional stated-vs-observed analysis is cross-sectional: ask at a point in time, observe at a point in time, compare. Intention-action gap analysis is longitudinal: track how both the intention and the behavior evolve together, and treat the *relationship* as the thing you're modeling.
 
-{% cite(title="The theory of planned behavior", authors="Ajzen, I.", year="1991", url="https://www.sciencedirect.com/science/article/abs/pii/074959789190020T") %}
+{{ cite(key="ajzen1991", title="The theory of planned behavior", authors="Ajzen, I.", year="1991", url="https://www.sciencedirect.com/science/article/abs/pii/074959789190020T") }}
 
 This is genuinely different. It means you're not trying to predict behavior from stated preferences (which is what traditional recommendation systems attempt). You're trying to model the *dynamics* of a person working toward a goal — which requires tracking both the compass heading and the actual trajectory.
 
@@ -109,13 +109,13 @@ Behavioral data tells you what someone does. Intention data tells you what someo
 
 The asymmetry matters. People broadly understand that apps track what they do. "Your behavior is our data" has been normalized through two decades of the attention economy. But "your aspirations and your failures to meet them are our data" is a different proposition. Most users probably don't think of it that way, even when they're actively entering their intentions into an app.
 
-{% cite(title="Privacy in Context: Technology, Policy, and the Integrity of Social Life", authors="Nissenbaum, H.", year="2010", url="https://www.sup.org/books/title/?id=8862") %}
+{{ cite(key="nissenbaum2010", title="Privacy in Context: Technology, Policy, and the Integrity of Social Life", authors="Nissenbaum, H.", year="2010", url="https://www.sup.org/books/title/?id=8862") }}
 
 There's also a power-dynamic question. Who has access to the gap data? Is it only used to improve the experience for the individual user, or is it aggregated, sold, or used to build models that serve third parties? "Your intention-action gap suggests you're struggling with focus" is useful information for a personal productivity tool. It's concerning information to have sitting in a dataset that could be subpoenaed, acquired, or breached.
 
 I'm not saying don't build this. I'm saying build it with explicit consent architecture, clear data minimization practices, and a genuine accounting of what you're actually collecting. "We track your intentions and compare them to your behavior" should be a sentence that appears in your privacy policy in plain language.
 
-{% cite(title="The Age of Surveillance Capitalism", authors="Zuboff, S.", year="2019", url="https://www.publicaffairsbooks.com/titles/shoshana-zuboff/the-age-of-surveillance-capitalism/9781610395694/") %}
+{{ cite(key="zuboff2019", title="The Age of Surveillance Capitalism", authors="Zuboff, S.", year="2019", url="https://www.publicaffairsbooks.com/titles/shoshana-zuboff/the-age-of-surveillance-capitalism/9781610395694/") }}
 
 ## The Bigger Picture: Modeling People Trying to Change
 

@@ -1,14 +1,14 @@
 +++
 title = "Through-Line Detection: What LLMs See That Rule Systems Can't"
 description = "Cross-modal pattern detection across behavioral data, free-text, and metadata — the capability that actually justifies using an LLM in a recommendation system."
-date = 2026-03-10
+date = 2026-03-10T19:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "llm-capabilities", "cross-modal-inference", "recommendation-systems"]
 series = ["deep-dives"]
 
 [extra]
-reading_time_original = "~10 min"
+reading_time = "~10 min"
 +++
 
 ## The One-Sentence Version
@@ -96,11 +96,11 @@ I want to be precise about the claim, because recommendation system people will 
 
 **On hallucination:** This is the real issue. Traditional recommendation systems fail quietly — they serve mediocre content, users disengage, nobody notices the causal link. LLM-generated through-lines fail loudly. If the model misreads the signals and serves content about "letting go of attachments" to someone who is actually working through a breakup and wanted to be challenged, not consoled — that's a bad experience with a bad rationale attached to it. The failure mode is more human-shaped, which makes it both more damaging and more diagnosable.
 
-{% cite(key="attention_all_you_need", title="Attention Is All You Need", authors="Vaswani et al.", year="2017", url="https://arxiv.org/abs/1706.03762") %}
+{{ cite(key="attention_all_you_need", title="Attention Is All You Need", authors="Vaswani et al.", year="2017", url="https://arxiv.org/abs/1706.03762") }}
 
-{% cite(key="collab_filter_survey", title="Collaborative Filtering for Implicit Feedback Datasets", authors="Hu, Koren, Volinsky", year="2008", url="http://yifanhu.net/PUB/cf.pdf") %}
+{{ cite(key="collab_filter_survey", title="Collaborative Filtering for Implicit Feedback Datasets", authors="Hu, Koren, Volinsky", year="2008", url="http://yifanhu.net/PUB/cf.pdf") }}
 
-{% cite(key="llm_rec_survey", title="A Survey on Large Language Models for Recommendation", authors="Wu et al.", year="2024", url="https://arxiv.org/abs/2305.19860") %}
+{{ cite(key="llm_rec_survey", title="A Survey on Large Language Models for Recommendation", authors="Wu et al.", year="2024", url="https://arxiv.org/abs/2305.19860") }}
 
 ## Open Questions (The Ones Nobody Has Good Answers To)
 

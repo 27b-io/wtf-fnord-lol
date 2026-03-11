@@ -248,6 +248,20 @@ body {
   letter-spacing: 0.03em;
 }
 
+.post-tag {
+  font-family: $mono;
+  font-size: 0.6rem;
+  color: $accent;
+  background: rgba($accent, 0.1);
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: background 0.2s;
+
+  &:hover { background: rgba($accent, 0.2); }
+}
+
 // ─── Article ────────────────────────────────────
 
 article {
@@ -717,6 +731,47 @@ article {
     letter-spacing: 0.1em;
     color: $fg-dim;
     margin-bottom: 1rem;
+  }
+
+  .references-entries {
+    padding-left: 1.5rem;
+    list-style: none;
+    counter-reset: ref-counter;
+
+    li {
+      counter-increment: ref-counter;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: $fg-muted;
+      scroll-margin-top: 2rem;
+
+      &::before {
+        content: '[' counter(ref-counter) ']';
+        color: $accent;
+        font-family: $mono;
+        font-size: 0.72rem;
+        display: inline-block;
+        width: 2em;
+        margin-left: -2em;
+      }
+    }
+  }
+
+  .ref-authors {
+    color: $fg;
+    font-weight: 600;
+  }
+
+  .ref-year {
+    color: $fg-muted;
+  }
+
+  .ref-title {
+    color: $accent;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
   }
 }
 

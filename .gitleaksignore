@@ -2,3 +2,5 @@
 # Zola shortcode cite() keys are not API keys; gitleaks entropy-matches them.
 # Fingerprint for the false positive on the 'shap-2017' key.
 content/deep-dives/multi-artifact-output/index.md:generic-api-key:249
+# Fingerprint for the false positive on the 'baumeister1994' key.
+content/deep-dives/intention-action-gaps/index.md:generic-api-key:70

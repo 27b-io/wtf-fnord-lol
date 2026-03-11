@@ -44,7 +44,7 @@
         · <a href="{{ page.extra.paper_url }}">paper</a>
         {% endif %}
         {% if page.taxonomies.tags %}
-        · {% for tag in page.taxonomies.tags %}{{ tag }}{% if not loop.last %}, {% endif %}{% endfor %}
+        · {% for tag in page.taxonomies.tags %}<a href="{{ get_taxonomy_url(kind='tags', name=tag) }}" class="post-tag">{{ tag }}</a> {% endfor %}
         {% endif %}
       </div>
       {% if page.taxonomies.series %}
@@ -87,4 +87,61 @@
 {% endif %}
 
 {% include "partials/chat.html" %}
+
+<script>
+(function() {
+  var cites = document.querySelectorAll('.citation[data-cite-key]');
+  if (!cites.length) {
+    var sec = document.querySelector('.references');
+    if (sec) sec.style.display = 'none';
+    return;
+  }
+  var seen = {}, refs = [];
+  cites.forEach(function(el) {
+    var k = el.getAttribute('data-cite-key');
+    if (!k || seen[k]) return;
+    seen[k] = true;
+    refs.push({
+      key: k,
+      url: el.getAttribute('data-cite-url') || '',
+      title: el.getAttribute('data-cite-title') || '',
+      authors: el.getAttribute('data-cite-authors') || '',
+      year: el.getAttribute('data-cite-year') || ''
+    });
+  });
+  var container = document.querySelector('.references-list');
+  if (!container) return;
+  var ol = document.createElement('ol');
+  ol.className = 'references-entries';
+  refs.forEach(function(r) {
+    var li = document.createElement('li');
+    li.id = 'ref-' + r.key;
+    var authors = document.createElement('span');
+    authors.className = 'ref-authors';
+    authors.textContent = r.authors;
+    li.appendChild(authors);
+    if (r.year) {
+      var year = document.createElement('span');
+      year.className = 'ref-year';
+      year.textContent = ' (' + r.year + ')';
+      li.appendChild(year);
+    }
+    li.appendChild(document.createTextNode('. '));
+    if (r.url) {
+      var a = document.createElement('a');
+      a.href = r.url;
+      a.className = 'ref-title';
+      a.textContent = r.title;
+      li.appendChild(a);
+    } else {
+      var span = document.createElement('span');
+      span.className = 'ref-title';
+      span.textContent = r.title;
+      li.appendChild(span);
+    }
+    ol.appendChild(li);
+  });
+  container.appendChild(ol);
+})();
+</script>
 {% endblock %}

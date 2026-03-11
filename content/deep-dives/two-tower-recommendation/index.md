@@ -1,7 +1,7 @@
 +++
 title = "WTF is Two-Tower Recommendation?"
 description = "The architecture behind every recommendation system that actually works at scale — why splitting the model in half is the key to serving billions of candidates in milliseconds."
-date = 2026-03-11
+date = 2026-03-11T09:00:00+11:00
 
 [taxonomies]
 tags = ["machine-learning", "recommendation-systems", "two-tower", "retrieval", "embeddings", "information-retrieval", "ranking"]

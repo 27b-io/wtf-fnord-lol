@@ -9,6 +9,7 @@ on:
       - 'sass/**'
       - 'static/**'
       - 'worker/**'
+      - 'scripts/**'
       - 'config.toml'
       - 'wrangler.toml'
 
@@ -33,6 +34,9 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+
+      - name: Generate glossary
+        run: npx tsx scripts/generate-glossary.ts
 
       - name: Build
         run: zola build
