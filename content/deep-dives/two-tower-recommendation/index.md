@@ -44,7 +44,7 @@ Two-tower is fundamentally a *serving* innovation, not a *modelling* innovation.
 
 ## The Architecture
 
-```
+```text
     User Tower                    Item Tower
         │                             │
   [user features]              [item features]
