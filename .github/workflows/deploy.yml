@@ -38,6 +38,10 @@ jobs:
       - name: Generate glossary
         run: npx tsx scripts/generate-glossary.ts
 
+      - name: Verify generated glossary is committed
+        run: |
+          git diff --exit-code content/glossary.md || (echo "ERROR: Generated glossary differs from committed version. Run 'npx tsx scripts/generate-glossary.ts' and commit the result." && exit 1)
+
       - name: Build
         run: zola build
 

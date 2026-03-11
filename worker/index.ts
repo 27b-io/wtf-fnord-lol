@@ -579,27 +579,43 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
   }
 
   // Call the real Stev3 via OpenClaw Gateway
-  const gatewayRes = await fetch(`${env.STEV3_GATEWAY_URL}/v1/responses`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.STEV3_API_KEY}`,
-      'CF-Access-Client-Id': env.CF_ACCESS_CLIENT_ID,
-      'CF-Access-Client-Secret': env.CF_ACCESS_CLIENT_SECRET,
-      'x-openclaw-agent-id': 'main',
-    },
-    body: JSON.stringify({
-      model: 'openclaw:main',
-      input,
-      instructions,
-      stream: true,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+  let gatewayRes: Response;
+  try {
+    gatewayRes = await fetch(`${env.STEV3_GATEWAY_URL}/v1/responses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.STEV3_API_KEY}`,
+        'CF-Access-Client-Id': env.CF_ACCESS_CLIENT_ID,
+        'CF-Access-Client-Secret': env.CF_ACCESS_CLIENT_SECRET,
+        'x-openclaw-agent-id': 'main',
+      },
+      body: JSON.stringify({
+        model: 'openclaw:main',
+        input,
+        instructions,
+        stream: true,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      return jsonResponse({ error: 'Gateway timeout' }, 504, { request });
+    }
+    throw err;
+  }
 
   if (!gatewayRes.ok || !gatewayRes.body) {
+    clearTimeout(timeoutId);
     console.error('Gateway error:', gatewayRes.status, await gatewayRes.text().catch(() => ''));
     return jsonResponse({ error: 'Chat unavailable' }, 502, { request });
   }
+
+  clearTimeout(timeoutId);
 
   // Transform OpenResponses SSE → CF AI SSE format for the client
   const { readable, writable } = new TransformStream();
