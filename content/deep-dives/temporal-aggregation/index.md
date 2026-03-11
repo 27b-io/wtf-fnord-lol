@@ -1,7 +1,7 @@
 +++
 title = "Multi-Window Temporal Aggregation for Behavioral Trajectory"
 description = "The same metric across 7, 30, and 90 days tells you where someone is heading, not just where they are. Here's why that distinction is the whole game."
-date = 2026-03-10
+date = 2026-03-10T18:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "data-architecture", "behavioral-analytics", "temporal-analysis"]

@@ -1,7 +1,7 @@
 +++
 title = "Empathy Architecture: Designing LLM Outputs That Don't Feel Like Surveillance"
 description = "\"After you close the laptop\" vs \"Your Evening Wind-Down\" — why the difference matters, and how to build systems that infer emotion without weaponising it."
-date = 2026-03-10
+date = 2026-03-10T09:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "design", "llm-outputs", "user-experience"]
@@ -106,7 +106,7 @@ None of these fit cleanly in a SQL column. All of them are more useful for produ
 
 The practical implementation: use LLMs for signal extraction, not just output generation. A cheap inference pass over a user's interaction history — asking "what is this person trying to do, what emotional state does their behaviour suggest, what through-lines are present?" — produces richer, more actionable signals than any amount of click-counting.
 
-{% cite(key="contextual-integrity", title="Privacy as Contextual Integrity", authors="Nissenbaum, H.", year=2004, url="https://digitalcommons.law.uw.edu/wlr/vol79/iss1/10") %}
+{{ cite(key="contextual-integrity", title="Privacy as Contextual Integrity", authors="Nissenbaum, H.", year="2004", url="https://digitalcommons.law.uw.edu/wlr/vol79/iss1/10") }}
 
 This is the framework: information flows appropriately when they match the norms of the context in which information was originally shared. A user's 11 PM listening habits were shared in the context of getting music recommendations. Turning that into a label on a playlist crosses a contextual boundary, even if it's technically accurate.
 
@@ -148,7 +148,7 @@ A system that knows you're anxious and surfaces calming content is being helpful
 
 Qualitative signals extracted from long-term history are relatively stable and relatively easy to reason about. In-session signals — you just had a frustrating interaction, you just received bad news, your typing speed has changed — are faster, noisier, and raise harder questions about what the system is allowed to infer. Real-time emotional inference is technically feasible and architecturally dangerous.
 
-{% cite(key="affective-computing", title="Affective Computing", authors="Picard, R.W.", year=1997, url="https://mitpress.mit.edu/9780262661157/affective-computing/") %}
+{{ cite(key="affective-computing", title="Affective Computing", authors="Picard, R.W.", year="1997", url="https://mitpress.mit.edu/9780262661157/affective-computing/") }}
 
 Picard's foundational work here is worth re-reading with contemporary LLM capabilities in mind. The inference problem she described in 1997 — recognising emotional state from behaviour — is largely solved. The ethical framework for what to do with that inference has not kept pace.
 
@@ -160,13 +160,13 @@ The "surveillance language" problem is a symptom of a broader failure mode in AI
 
 Social illegibility is the condition in which a system's behaviour doesn't match the social contract that users expect. Users expect a music app to have good taste, the way a friend might. They don't expect the music app to have a detailed dossier on their habits that it occasionally recites back to them. The capability gap between "what the system can infer" and "what users expect the system to know" has widened dramatically with LLMs, and most products haven't updated their mental models accordingly.
 
-{% cite(key="weapons-math-destruction", title="Weapons of Math Destruction", authors="O'Neil, C.", year=2016, url="https://www.penguinrandomhouse.com/books/241363/weapons-of-math-destruction-by-cathy-oneil/") %}
+{{ cite(key="weapons-math-destruction", title="Weapons of Math Destruction", authors="O'Neil, C.", year="2016", url="https://www.penguinrandomhouse.com/books/241363/weapons-of-math-destruction-by-cathy-oneil/") }}
 
 O'Neil's framing of algorithmic opacity is relevant here from the other direction. She argues (correctly) that opaque algorithms cause harm when their decisions affect people's lives — credit, employment, housing. The call is for transparency. But not all algorithmic contexts are the same: a recommendation system isn't making decisions about your mortgage, and transparency about emotional inference in a music app serves different interests than transparency about a credit score model. The architecture needs to distinguish between "opacity that protects users" and "opacity that hides accountability."
 
 The empathy architecture principle doesn't oppose transparency. It opposes the specific pattern where transparency is achieved by printing the inference in the UI copy, which is the lowest-effort implementation of transparency and also the most socially disruptive one.
 
-{% cite(key="value-sensitive-design", title="Value Sensitive Design: Shaping Technology with Moral Imagination", authors="Friedman, B., Hendry, D.G.", year=2019, url="https://mitpress.mit.edu/9780262039536/value-sensitive-design/") %}
+{{ cite(key="value-sensitive-design", title="Value Sensitive Design: Shaping Technology with Moral Imagination", authors="Friedman, B., Hendry, D.G.", year="2019", url="https://mitpress.mit.edu/9780262039536/value-sensitive-design/") }}
 
 Value-sensitive design as a methodology offers a useful frame here: the technical choice (separate inference from output) is downstream of a values choice (users should feel understood, not catalogued). Making the values choice explicit forces the technical choice to follow. Most teams skip the values conversation and then wonder why their personalisation feels creepy.
 

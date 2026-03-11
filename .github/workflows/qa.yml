@@ -33,6 +33,9 @@ jobs:
         with:
           tool: zola@0.19.2
 
+      - name: Generate glossary
+        run: npx tsx scripts/generate-glossary.ts
+
       - name: Zola build
         run: zola build
 

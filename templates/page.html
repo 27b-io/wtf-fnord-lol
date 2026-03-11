@@ -44,7 +44,7 @@
         · <a href="{{ page.extra.paper_url }}">paper</a>
         {% endif %}
         {% if page.taxonomies.tags %}
-        · {% for tag in page.taxonomies.tags %}{{ tag }}{% if not loop.last %}, {% endif %}{% endfor %}
+        · {% for tag in page.taxonomies.tags %}<a href="{{ get_taxonomy_url(kind='tags', name=tag) }}" class="post-tag">{{ tag }}</a> {% endfor %}
         {% endif %}
       </div>
       {% if page.taxonomies.series %}
@@ -87,4 +87,42 @@
 {% endif %}
 
 {% include "partials/chat.html" %}
+
+<script>
+(function() {
+  var cites = document.querySelectorAll('.citation[data-cite-key]');
+  if (!cites.length) {
+    var sec = document.querySelector('.references');
+    if (sec) sec.style.display = 'none';
+    return;
+  }
+  var seen = {}, refs = [];
+  cites.forEach(function(el) {
+    var k = el.getAttribute('data-cite-key');
+    if (!k || seen[k]) return;
+    seen[k] = true;
+    refs.push({
+      key: k,
+      url: el.getAttribute('data-cite-url') || '',
+      title: el.getAttribute('data-cite-title') || '',
+      authors: el.getAttribute('data-cite-authors') || '',
+      year: el.getAttribute('data-cite-year') || ''
+    });
+  });
+  var ol = document.createElement('ol');
+  ol.className = 'references-entries';
+  refs.forEach(function(r) {
+    var li = document.createElement('li');
+    li.id = 'ref-' + r.key;
+    var html = '<span class="ref-authors">' + r.authors + '</span>';
+    if (r.year) html += ' <span class="ref-year">(' + r.year + ')</span>';
+    html += '. ';
+    if (r.url) html += '<a href="' + r.url + '" class="ref-title">' + r.title + '</a>';
+    else html += '<span class="ref-title">' + r.title + '</span>';
+    li.innerHTML = html;
+    ol.appendChild(li);
+  });
+  document.querySelector('.references-list').appendChild(ol);
+})();
+</script>
 {% endblock %}

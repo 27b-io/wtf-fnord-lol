@@ -1,7 +1,7 @@
 +++
 title = "Pre-computed Personalization: The Offline Agent Pattern"
 description = "Why your personalization agent should never run at request time. The LLM does its heavy lifting on a schedule; your product serves the artifacts. Zero latency, infinite scale."
-date = 2026-03-10
+date = 2026-03-10T14:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "architecture", "llm-agents", "offline-computation"]

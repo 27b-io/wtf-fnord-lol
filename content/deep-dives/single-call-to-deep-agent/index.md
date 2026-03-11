@@ -1,7 +1,7 @@
 +++
 title = "From Single LLM Call to Deep Agent: An Honest Migration Path"
 description = "Start with one function call. Add skills when the prompt gets too long. A no-framework guide to building agents that actually ship."
-date = 2026-03-10
+date = 2026-03-10T17:00:00+11:00
 
 [taxonomies]
 tags = ["llm-agents", "architecture", "migration", "langgraph"]

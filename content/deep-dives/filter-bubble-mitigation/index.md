@@ -1,7 +1,7 @@
 +++
 title = "Filter Bubble Mitigation in Personalized Systems"
 description = "How to avoid turning personalization into an algorithmic echo chamber — and why the fix isn't as simple as randomly throwing garbage at your users."
-date = 2026-03-10
+date = 2026-03-10T10:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "ethics", "recommendation-systems", "filter-bubbles"]

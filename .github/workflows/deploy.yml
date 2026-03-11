@@ -34,6 +34,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Generate glossary
+        run: npx tsx scripts/generate-glossary.ts
+
       - name: Build
         run: zola build
 

@@ -1,7 +1,7 @@
 +++
 title = "KARL: Knowledge Agents via Reinforcement Learning"
 description = "Databricks trained an RL-based search agent on GLM 4.5 Air that beats Claude 4.6 and GPT 5.2 on enterprise knowledge retrieval — at a fraction of the cost."
-date = 2026-03-09
+date = 2026-03-09T12:00:00+11:00
 
 [taxonomies]
 tags = ["reinforcement-learning", "rag", "search-agents", "databricks", "paper-review"]

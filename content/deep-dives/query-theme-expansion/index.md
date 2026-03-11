@@ -1,7 +1,7 @@
 +++
 title = "Query-Theme-Keyed Search Expansion"
 description = "Two users search 'sleep' and get different results — with no LLM at query time. How pre-computed, theme-keyed expansion terms turn a flat search into something that actually knows you."
-date = 2026-03-10
+date = 2026-03-10T15:00:00+11:00
 
 [taxonomies]
 tags = ["personalization", "search", "query-expansion", "architecture"]

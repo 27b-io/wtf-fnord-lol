@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --check 'worker/**/*.ts' 'scripts/**/*.ts'",
     "format:fix": "prettier --write 'worker/**/*.ts' 'scripts/**/*.ts'",
-    "check": "npm run typecheck && npm run lint && npm run format && zola build"
+    "check": "npm run typecheck && npm run lint && npm run format && zola build",
+    "glossary": "tsx scripts/generate-glossary.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260207.0",

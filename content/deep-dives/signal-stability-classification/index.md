@@ -1,7 +1,7 @@
 +++
 title = "Signal Stability Classification: Inference Cost-Benefit in Hybrid Recommendation Systems"
 description = "Not all behavioral signals deserve the same compute budget. Genre affinity changes over weeks; session mood changes in seconds. Classify by stability, infer by tier, and stop pretending daily batch is the answer to everything."
-date = 2026-03-10
+date = 2026-03-10T16:00:00+11:00
 
 [taxonomies]
 tags = ["recommendation-systems", "architecture", "personalization", "feature-stores", "cost-optimization"]

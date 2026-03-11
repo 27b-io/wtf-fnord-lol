@@ -1,7 +1,7 @@
 +++
 title = "WTF is LightGBM?"
 description = "Gradient-boosted decision trees for people who've never trained one — how they work, when they win, when they don't, and why tabular foundation models are about to make this conversation more complicated."
-date = 2026-03-11
+date = 2026-03-11T10:00:00+11:00
 
 [taxonomies]
 tags = ["machine-learning", "lightgbm", "gradient-boosting", "tabular-data", "ranking", "xgboost", "catboost"]

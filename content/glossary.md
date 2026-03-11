@@ -30,6 +30,9 @@ date = 2026-03-09
 <dt>behavioral trajectory</dt>
 <dd>The directional change in a user's behavior over time — not just what they do, but whether they're doing it more or less, and how fast that's changing.</dd>
 
+<dt>CatBoost</dt>
+<dd>Yandex's gradient boosting library, notable for native ordered-boosting on categorical features (avoids target leakage) and symmetric tree growth for good generalisation.</dd>
+
 <dt>ColBERT</dt>
 <dd>A late-interaction model that stores per-token embeddings for documents and computes relevance via MaxSim over token pairs. Middle ground between dual encoder speed and cross-encoder accuracy.</dd>
 
@@ -66,6 +69,9 @@ date = 2026-03-09
 <dt>echo chamber</dt>
 <dd>A self-reinforcing information environment where existing beliefs are amplified and contrary views are systematically filtered out, regardless of their validity.</dd>
 
+<dt>EFB</dt>
+<dd>Exclusive Feature Bundling — identifies features that rarely take non-zero values simultaneously and bundles them into a single feature, reducing dimensionality without losing information.</dd>
+
 <dt>emotional state inference</dt>
 <dd>The process by which an LLM derives a user's likely emotional context from behavioural patterns, content choices, and interaction history — used internally for ranking and personalisation, never surfaced to users.</dd>
 
@@ -81,17 +87,35 @@ date = 2026-03-09
 <dt>exposed-not-engaged</dt>
 <dd>Content, tags, or creators that were rendered in a user's recommendation surface (impressions logged) but received zero interaction across multiple sessions. The user saw it. They chose not to interact. That's a signal.</dd>
 
+<dt>feature importance values may change</dt>
+<dd>LightGBM does not guarantee feature importance stability across major versions. The release notes don't document specific importance algorithm changes, but users report significant deltas (see GitHub #6964). Likely caused by training behaviour differences rather than a deliberate formula change.</dd>
+
 <dt>feature stores</dt>
 <dd>Infrastructure for managing, serving, and versioning ML features across training and inference. Examples include Feast (open-source, batch + online serving), Hopsworks (real-time feature pipelines with RALF-style scheduling), and Tecton (managed, with built-in freshness SLAs). The feature store is where signal stability classification becomes concrete infrastructure.</dd>
 
 <dt>filter bubble</dt>
 <dd>The informational environment created when algorithmic personalization shows users increasingly narrow content aligned with their existing views, insulating them from contrary perspectives.</dd>
 
+<dt>frees the underlying dataset</dt>
+<dd>Specifically, free_raw_data=True releases the Python-side raw data after Dataset construction. The internal LightGBM Dataset still exists, but any code that later needs the original raw data (e.g., setting references, modifying metadata, or reconstructing the Dataset) will silently get garbage.</dd>
+
 <dt>generative recommendation</dt>
 <dd>Using LLMs to generate recommendations directly rather than scoring pre-computed candidate lists. Collapses the candidate retrieval + scoring pipeline but introduces latency and cost tradeoffs.</dd>
 
+<dt>GOSS</dt>
+<dd>Gradient-based One-Side Sampling — keeps all data points with large gradients (high error) and randomly samples from small-gradient points, reducing the dataset without losing much information gain signal.</dd>
+
+<dt>gradient boosting</dt>
+<dd>An ensemble method that trains weak learners (usually decision trees) sequentially, where each new learner corrects the errors of the combined ensemble so far.</dd>
+
 <dt>GRPO</dt>
 <dd>Group Relative Policy Optimization — generates a group of outputs, ranks them relative to each other, reinforces the best. No value model needed.</dd>
+
+<dt>Histogram-based splitting</dt>
+<dd>Discretising continuous features into bins (256 by default) so finding the best split scans bins rather than sorting the full dataset. O(bins) instead of O(n·log(n)).</dd>
+
+<dt>hyperparameter tuning</dt>
+<dd>Systematically searching for the best model configuration (learning rate, tree depth, regularisation, etc.) using techniques like Bayesian optimisation or random search.</dd>
 
 <dt>In-batch negatives</dt>
 <dd>Using other users' positive items in the same training batch as negatives. Simple, free, surprisingly effective at batch sizes of 4096+.</dd>
@@ -102,11 +126,20 @@ date = 2026-03-09
 <dt>KL Divergence</dt>
 <dd>Measure of how much one probability distribution differs from another. Used as a penalty to stop RL-trained models from drifting too far from their original behavior.</dd>
 
+<dt>LambdaRank</dt>
+<dd>A listwise learning-to-rank algorithm that optimises pairwise ranking loss weighted by the change in NDCG from swapping two items.</dd>
+
 <dt>LangGraph</dt>
 <dd>A framework for building stateful, multi-actor LLM applications as directed graphs — nodes are callables (LLM calls, tools, functions), edges are conditional transitions.</dd>
 
+<dt>Leaf-wise growth</dt>
+<dd>A tree growth strategy that always splits the leaf with the highest loss reduction, regardless of depth. Produces unbalanced trees that reduce error faster per split, but can overfit more easily on small datasets.</dd>
+
 <dt>logged intentions</dt>
 <dd>Behavioral events that represent an intentional act being executed — a user consciously recording or marking an action as deliberate, rather than the system passively observing it.</dd>
+
+<dt>micro-batch training</dt>
+<dd>Training a model incrementally across batches of data, passing the previous model as init_model to each subsequent batch. Keeps memory constant regardless of total dataset size.</dd>
 
 <dt>MoE</dt>
 <dd>Mixture of Experts — an architecture with many expert sub-networks, only a few activated per input. Big model, small per-token cost.</dd>
@@ -140,6 +173,9 @@ date = 2026-03-09
 
 <dt>online learning</dt>
 <dd>A machine learning paradigm where the model updates continuously from incoming data rather than being retrained in periodic batch cycles. Enables minute-level adaptation but requires careful infrastructure.</dd>
+
+<dt>optimal split subsets</dt>
+<dd>In theory, 2^(k-1)-1 possible partitions — exponential. In practice, LightGBM uses an efficient O(k log k) procedure: sort categories by accumulated gradient/hessian, scan the sorted order. Not brute-force, but still costly at high cardinality.</dd>
 
 <dt>Pareto optimal</dt>
 <dd>A state where you can't improve one objective without making another worse. The best possible trade-off between competing goals.</dd>
@@ -221,6 +257,9 @@ date = 2026-03-09
 
 <dt>surveillance language</dt>
 <dd>Copy or UI text that exposes the system's knowledge of a user's behavioural patterns — time-based labels, frequency references, habit callouts. Technically accurate, socially wrong.</dd>
+
+<dt>TabPFN v2</dt>
+<dd>A pretrained transformer that performs in-context learning on tabular data — you pass it a dataset, it predicts, no gradient updates needed. Published in Nature, 2025.</dd>
 
 <dt>Tag frequency</dt>
 <dd>Simple ranking of how often a user has engaged with content carrying a given tag. High frequency = high affinity. Fast, interpretable, and completely blind to meaning.</dd>

@@ -1,7 +1,7 @@
 +++
 title = "Negative Signals as First-Class Citizens in Recommendation"
 description = "What users don't do matters more than what they do. Most recommendation systems are built entirely on applause. Here's why the silence is louder."
-date = 2026-03-10
+date = 2026-03-10T13:00:00+11:00
 
 [taxonomies]
 tags = ["recommendation-systems", "behavioral-analytics", "negative-signals", "personalization"]
@@ -152,15 +152,15 @@ How do you distinguish "user doesn't like crime documentaries" from "user doesn'
 
 This isn't a novel idea in the research literature. The concept of implicit negative feedback has been in the academic record for twenty years.
 
-{% cite(key="jawaheer2010", title="Comparison of Implicit and Explicit Feedback from an Online Music Recommendation Service", authors="Jawaheer et al.", year="2010", url="https://dl.acm.org/doi/10.1145/1869652.1869658") %}
+{{ cite(key="jawaheer2010", title="Comparison of Implicit and Explicit Feedback from an Online Music Recommendation Service", authors="Jawaheer et al.", year="2010", url="https://dl.acm.org/doi/10.1145/1869652.1869658") }}
 
-{% cite(key="pan2008", title="One-Class Collaborative Filtering", authors="Pan et al.", year="2008", url="https://ieeexplore.ieee.org/document/4781145") %}
+{{ cite(key="pan2008", title="One-Class Collaborative Filtering", authors="Pan et al.", year="2008", url="https://ieeexplore.ieee.org/document/4781145") }}
 
-{% cite(key="hu2008", title="Collaborative Filtering for Implicit Feedback Datasets", authors="Hu, Koren & Volinsky", year="2008", url="https://ieeexplore.ieee.org/document/4781121") %}
+{{ cite(key="hu2008", title="Collaborative Filtering for Implicit Feedback Datasets", authors="Hu, Koren & Volinsky", year="2008", url="https://ieeexplore.ieee.org/document/4781121") }}
 
 The Hu/Koren/Volinsky paper from 2008 is the canonical reference — it formalises the confidence-weighted approach to implicit feedback and explicitly addresses the non-exposure problem. It's nearly two decades old. It is still not implemented correctly in most production systems I've seen.
 
-{% cite(key="liang2016", title="Modeling User Exposure in Recommendation", authors="Liang et al.", year="2016", url="https://dl.acm.org/doi/10.1145/2872427.2883090") %}
+{{ cite(key="liang2016", title="Modeling User Exposure in Recommendation", authors="Liang et al.", year="2016", url="https://dl.acm.org/doi/10.1145/2872427.2883090") }}
 
 Liang et al.'s exposure model from 2016 is the more rigorous treatment — they propose explicitly modelling whether a user was exposed to an item as a latent variable, rather than treating all non-interactions as equivalent. This is the right framing. It's also genuinely hard to implement at scale, which is why teams reach for the heuristic approximations instead.
 
