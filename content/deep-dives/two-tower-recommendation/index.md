@@ -105,11 +105,11 @@ If you train with only random negatives, your model learns to distinguish popula
 
 The two-tower pattern has competition in the retrieval space:
 
-**{{ glossary(term="ColBERT", def="A late-interaction model that stores per-token embeddings for documents and computes relevance via MaxSim over token pairs. Middle ground between dual encoder speed and cross-encoder accuracy.") }}** stores per-token embeddings instead of a single vector per item. Query-item similarity is computed via MaxSim over token pairs — more expressive than a single dot product, more efficient than a full cross-encoder. Originally designed for text retrieval, the pattern applies to recommendations.
+**{{ glossary(term="ColBERT", def="A late-interaction model that stores per-token embeddings for documents and computes relevance via MaxSim over token pairs. Middle ground between dual encoder speed and cross-encoder accuracy.") }}** stores per-token embeddings instead of a single vector per item. More expressive than a single dot product, more efficient than a full cross-encoder. Reach for it when your retrieval quality ceiling is too low but you can't afford cross-encoder latency on the full corpus.
 
-**{{ glossary(term="SPLADE", def="Learned sparse retrieval — produces sparse, high-dimensional representations that work with inverted indexes. Combines neural semantic power with traditional search infrastructure.") }}** learns sparse, high-dimensional representations that work with traditional inverted indexes. Useful when you need explainability or want to combine neural retrieval with keyword matching.
+**{{ glossary(term="SPLADE", def="Learned sparse retrieval — produces sparse, high-dimensional representations that work with inverted indexes. Combines neural semantic power with traditional search infrastructure.") }}** learns sparse representations that work with traditional inverted indexes. Useful when you need explainability, want to combine neural retrieval with keyword matching, or already have a BM25 infrastructure you'd rather extend than replace.
 
-**Hybrid towers** (IntTower, RankTower, 2025) add lightweight cross-attention between towers at the output layer. Partially breaks the independence constraint while keeping most of the serving efficiency. The space is moving toward "how much interaction can we add before serving breaks?"
+**Hybrid towers** (IntTower, RankTower, 2025) add lightweight cross-attention between towers at the output layer. The question the field is converging on: how much interaction can you add before serving breaks?
 
 ## The Lineage
 
@@ -117,7 +117,7 @@ The two-tower pattern has competition in the retrieval space:
 |------|-------|-----------------|
 | 2013 | {{ cite(key="dssm2013", title="Learning Deep Structured Semantic Models for Web Search", authors="Huang et al.", year="2013", url="https://www.microsoft.com/en-us/research/publication/learning-deep-structured-semantic-models-for-web-search-using-clickthrough-data/") }} (DSSM) | The original. Word hashing + MLP towers for web search. |
 | 2016 | {{ cite(key="youtube2016", title="Deep Neural Networks for YouTube Recommendations", authors="Covington et al.", year="2016", url="https://arxiv.org/abs/1606.07792") }} | Two-stage retrieve+rank at YouTube scale. Established the production pattern everyone still follows. |
-| 2019 | {{ cite(key="yi2019b", title="Sampling-Bias-Corrected Neural Modeling", authors="Yi et al.", year="2019", url="https://research.google/pubs/pub48840/") }} | Proved that negative sampling strategy matters more than architecture. |
+| 2019 | {{ cite(key="yi2019", title="Sampling-Bias-Corrected Neural Modeling", authors="Yi et al.", year="2019", url="https://research.google/pubs/pub48840/") }} | Proved that negative sampling strategy matters more than architecture. |
 | 2020 | {{ cite(key="colbert2020", title="ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction", authors="Khattab & Zaharia", year="2020", url="https://arxiv.org/abs/2004.12832") }} | Late interaction as a middle ground. |
 | 2025 | MICE, IntTower, RankTower | Selective cross-attention without destroying serving efficiency. |
 
@@ -129,4 +129,4 @@ The two-tower pattern has competition in the retrieval space:
 
 **Watch the negatives.** Your model is only as good as what it learns to distinguish. In-batch negatives with large batches are the minimum. Hard negative mining is where the real gains live.
 
-Two-tower is a compromise. It sacrifices the ability to see both sides at once for the ability to serve at scale. The ones that feel magical just hide the pipeline better.
+Two-tower is a compromise. It sacrifices the ability to see both sides at once for the ability to serve at scale.
