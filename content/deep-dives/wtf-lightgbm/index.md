@@ -84,7 +84,7 @@ If your validation AUC looks great but production metrics are garbage, reduce `n
 
 ### The `free_raw_data` Disaster
 
-By default, LightGBM frees the underlying dataset memory after training a booster. Fine for one model. When training multiple models on the same dataset, your second classifier trains on freed memory and silently produces garbage — no error, no warning, just useless predictions.
+By default, LightGBM {{ glossary(term="frees the underlying dataset", def="Specifically, free_raw_data=True releases the Python-side raw data after Dataset construction. The internal LightGBM Dataset still exists, but any code that later needs the original raw data (e.g., setting references, modifying metadata, or reconstructing the Dataset) will silently get garbage.") }} memory after training a booster. Fine for one model. When training multiple models on the same dataset, your second classifier can silently produce garbage — no error, no warning, just useless predictions.
 
 {% callout(type="warning") %}
 Set `free_raw_data=False` if you're training multiple objectives on the same data. This default has caused more silent production bugs than any other LightGBM parameter.
@@ -92,7 +92,7 @@ Set `free_raw_data=False` if you're training multiple objectives on the same dat
 
 ### Categorical Cardinality Limits
 
-Native categorical handling finds optimal split subsets — exponential in the number of categories. For features like `item_id` (millions of values), use embeddings or frequency encoding instead. LightGBM will either crawl or silently fall back to treating them as integers.
+Native categorical handling finds {{ glossary(term="optimal split subsets", def="In theory, 2^(k-1)-1 possible partitions — exponential. In practice, LightGBM uses an efficient O(k log k) procedure: sort categories by accumulated gradient/hessian, scan the sorted order. Not brute-force, but still costly at high cardinality.") }} efficiently, but high-cardinality features are still a poor fit. For features like `item_id` (millions of values), use embeddings or frequency encoding instead — the memory overhead and overfitting risk outweigh the convenience.
 
 ### `init_model` for Incremental Training
 
@@ -100,7 +100,7 @@ LightGBM's `init_model` lets you resume training from a previous booster — use
 
 ### LightGBM 4.x Migration
 
-If you're upgrading from 3.x to 4.5+, feature importance values change even with identical data and hyperparameters. The split algorithms were refined. Your model isn't broken, but if you monitor feature importance drift, expect false alarms.
+If you're upgrading from 3.x to 4.x, {{ glossary(term="feature importance values may change", def="LightGBM does not guarantee feature importance stability across major versions. The release notes don't document specific importance algorithm changes, but users report significant deltas (see GitHub #6964). Likely caused by training behaviour differences rather than a deliberate formula change.") }} even with identical data and hyperparameters. If you monitor feature importance drift, expect false alarms after upgrading.
 
 ## Bottom Line
 
