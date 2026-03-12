@@ -30,6 +30,9 @@ date = 2026-03-09
 <dt>behavioral trajectory</dt>
 <dd>The directional change in a user's behavior over time — not just what they do, but whether they're doing it more or less, and how fast that's changing.</dd>
 
+<dt>BM25</dt>
+<dd>Best Matching 25 — a classic keyword-based scoring algorithm that considers term frequency, inverse document frequency, and document length. Often outperforms embeddings for exact-match queries and entity lookups.</dd>
+
 <dt>CatBoost</dt>
 <dd>Yandex's gradient boosting library, notable for native ordered-boosting on categorical features (avoids target leakage) and symmetric tree growth for good generalisation.</dd>
 
@@ -38,6 +41,9 @@ date = 2026-03-09
 
 <dt>Collaborative filtering</dt>
 <dd>Recommendation technique that predicts preferences by finding users with similar past behavior. 'People who liked X also liked Y.' No content understanding required — just pattern matching over interaction matrices.</dd>
+
+<dt>contextual bandit</dt>
+<dd>A bandit algorithm that conditions arm selection on contextual features (user attributes, time of day, etc.) rather than treating all rounds identically. Duolingo's approach is simpler — it uses eligibility-based scoring rather than full contextual features.</dd>
 
 <dt>contrastive objective</dt>
 <dd>A loss function that pushes positive (user, item) pairs closer in embedding space and negative pairs further apart. The model learns what 'relevant' means by seeing examples of both.</dd>
@@ -54,6 +60,9 @@ date = 2026-03-09
 <dt>deep agents</dt>
 <dd>AI systems that operate over multiple reasoning steps, use tools, maintain state, and can spawn sub-agents — as opposed to single-shot LLM calls that take an input and return an output.</dd>
 
+<dt>direct signals</dt>
+<dd>Signals explicitly provided by the user or system — ratings, bookmarks, importance scores, metadata filters. 'The user said this matters.' Strength: unambiguous intent. Weakness: sparse, requires user effort.</dd>
+
 <dt>disengagement signals</dt>
 <dd>Aggregated behavioral patterns indicating persistent non-preference across a category, tag, or content type. Built from multiple exposure-without-engagement observations rather than any single event.</dd>
 
@@ -66,11 +75,20 @@ date = 2026-03-09
 <dt>downstream consumer</dt>
 <dd>Any system that reads and acts on part of an LLM's output. In the multi-artifact pattern, multiple downstream consumers each depend on different artifacts of the same response.</dd>
 
+<dt>Ebbinghaus forgetting curve</dt>
+<dd>Hermann Ebbinghaus's 1885 finding that memory retention decays exponentially over time. Duolingo applies this to notification fatigue: the 'memory' of having seen a template fades with a ~15-day half-life.</dd>
+
 <dt>echo chamber</dt>
 <dd>A self-reinforcing information environment where existing beliefs are amplified and contrary views are systematically filtered out, regardless of their validity.</dd>
 
 <dt>EFB</dt>
 <dd>Exclusive Feature Bundling — identifies features that rarely take non-zero values simultaneously and bundles them into a single feature, reducing dimensionality without losing information.</dd>
+
+<dt>eligibility criteria</dt>
+<dd>Conditions that must be true for a notification template to be available to a specific user in a given round — streak length, learning goals, time of day, etc.</dd>
+
+<dt>embedding-based retrieval</dt>
+<dd>Using dense vector representations of content (from models like BERT, Arctic, or OpenAI's ada) to find items that are similar in meaning. The backbone of modern search and retrieval systems.</dd>
 
 <dt>emotional state inference</dt>
 <dd>The process by which an LLM derives a user's likely emotional context from behavioural patterns, content choices, and interaction history — used internally for ranking and personalisation, never surfaced to users.</dd>
@@ -111,6 +129,9 @@ date = 2026-03-09
 <dt>GRPO</dt>
 <dd>Group Relative Policy Optimization — generates a group of outputs, ranks them relative to each other, reinforces the best. No value model needed.</dd>
 
+<dt>habituate</dt>
+<dd>The psychological process by which repeated exposure to the same stimulus reduces response. In notification systems, sending the same message repeatedly causes users to ignore it — even if it was initially the most effective option.</dd>
+
 <dt>Histogram-based splitting</dt>
 <dd>Discretising continuous features into bins (256 by default) so finding the best split scans bins rather than sorting the full dataset. O(bins) instead of O(n·log(n)).</dd>
 
@@ -135,14 +156,23 @@ date = 2026-03-09
 <dt>Leaf-wise growth</dt>
 <dd>A tree growth strategy that always splits the leaf with the highest loss reduction, regardless of depth. Produces unbalanced trees that reduce error faster per split, but can overfit more easily on small datasets.</dd>
 
+<dt>LightGCN</dt>
+<dd>Light Graph Convolutional Network — a simplified GNN for collaborative filtering that removes feature transformation and nonlinear activation, keeping only the core neighbourhood aggregation. Performs surprisingly well given its simplicity.</dd>
+
 <dt>logged intentions</dt>
 <dd>Behavioral events that represent an intentional act being executed — a user consciously recording or marking an action as deliberate, rather than the system passively observing it.</dd>
+
+<dt>mcp-memory-service</dt>
+<dd>An open-source MCP server providing persistent, semantically searchable memory with knowledge graph relationships, emotional analysis, salience scoring, and Hebbian learning. Used by AI agents for long-term memory.</dd>
 
 <dt>micro-batch training</dt>
 <dd>Training a model incrementally across batches of data, passing the previous model as init_model to each subsequent batch. Keeps memory constant regardless of total dataset size.</dd>
 
 <dt>MoE</dt>
 <dd>Mixture of Experts — an architecture with many expert sub-networks, only a few activated per input. Big model, small per-token cost.</dd>
+
+<dt>multi-armed bandit</dt>
+<dd>An exploration-exploitation framework where an agent repeatedly chooses among options ('arms') to maximise cumulative reward, balancing trying new options against exploiting known good ones.</dd>
 
 <dt>multi-artifact output</dt>
 <dd>An LLM response structured as multiple typed sub-documents, each shaped for a distinct downstream consumer. The single inference call amortises across all consumers.</dd>
@@ -180,6 +210,9 @@ date = 2026-03-09
 <dt>Pareto optimal</dt>
 <dd>A state where you can't improve one objective without making another worse. The best possible trade-off between competing goals.</dd>
 
+<dt>Park et al.</dt>
+<dd>Reference to 'Generative Agents: Interactive Simulacra of Human Behavior' (Park et al., 2023), which introduced a memory scoring formula for AI agents: score = α_recency × recency + α_importance × importance + α_relevance × relevance. The foundational work that most agent memory systems extend.</dd>
+
 <dt>persistent context</dt>
 <dd>State persisted between agent invocations — allowing an LLM agent to remember decisions, user preferences, and history across multiple calls without a backend database.</dd>
 
@@ -213,14 +246,29 @@ date = 2026-03-09
 <dt>rate of change</dt>
 <dd>In behavioral analytics: how quickly a user's metric is changing between time windows. A large difference between 7d and 90d windows indicates rapid behavioral change; a small difference indicates stability.</dd>
 
+<dt>Reciprocal Rank Fusion</dt>
+<dd>A technique for combining ranked result lists from multiple retrieval methods. For each item, scores = Σ 1/(k + rank_i) across all retrieval methods. Simple, effective, and widely used in hybrid search.</dd>
+
 <dt>recommendation seed</dt>
 <dd>A structured hint to a recommendation engine: a theme, query suggestion, filter parameters, and crucially a human-readable explanation of why this recommendation was generated.</dd>
+
+<dt>relational signals</dt>
+<dd>Signals derived from connections between entities — co-access patterns, knowledge graphs, social links, Hebbian associations. 'People who liked X also liked Y.' Strength: captures latent preferences. Weakness: popularity bias, cold start.</dd>
+
+<dt>relative difference</dt>
+<dd>(μ⁺ - μ⁻) / μ⁻ — measures how much better a template performs compared to the baseline reward of its own eligible population. Controls for confounding eligibility criteria without needing to know what those criteria are.</dd>
 
 <dt>request-time inference</dt>
 <dd>Any LLM call that sits on the critical path between a user action (button press, page load, search query) and the system's response. If the LLM is slow or unavailable, the user waits.</dd>
 
+<dt>RGCN</dt>
+<dd>Relational Graph Convolutional Network — a GNN variant that learns separate weight matrices for different edge types, allowing the model to treat 'purchased' and 'viewed' relationships differently.</dd>
+
 <dt>search suggestion chips</dt>
 <dd>UI elements that appear below the search bar showing related or suggested queries. In a personalized system, these can be pre-generated from the same expansion_terms structure — surfacing the expansion before the user even completes their query.</dd>
+
+<dt>semantic signals</dt>
+<dd>Signals derived from the meaning of content — embeddings, topic models, entity extraction. 'This document is about X.' Strength: handles cold start. Weakness: doesn't know what the user actually wants.</dd>
 
 <dt>semantic summarization</dt>
 <dd>Using an LLM to produce a natural-language or structured summary of a user's behavioural history that captures intent, interest, and context — not just surface-level keywords or item IDs.</dd>
@@ -242,6 +290,9 @@ date = 2026-03-09
 
 <dt>snapshot vs trajectory</dt>
 <dd>Snapshot: a single-point-in-time measure of user behavior. Trajectory: the direction and rate of change of that behavior across time. Snapshots describe state; trajectories describe momentum.</dd>
+
+<dt>softmax</dt>
+<dd>A probability distribution where each option's selection probability is proportional to exp(score/τ), with temperature τ controlling how aggressively the algorithm exploits high-scoring options vs. exploring alternatives.</dd>
 
 <dt>SPLADE</dt>
 <dd>Learned sparse retrieval — produces sparse, high-dimensional representations that work with inverted indexes. Combines neural semantic power with traditional search infrastructure.</dd>
