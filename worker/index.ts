@@ -549,8 +549,8 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
 
   const contextText = contextChunks.join('\n\n---\n\n');
 
-  // Build input for the gateway as OpenResponses message items
-  const input: Array<{ role: string; content: string }> = [];
+  // Build input for the gateway as OpenAI Responses API message items
+  const input: Array<{ type: string; role: string; content: string }> = [];
 
   if (body.history) {
     const safeHistory = body.history
@@ -559,10 +559,10 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
           (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string',
       )
       .slice(-10);
-    input.push(...safeHistory);
+    input.push(...safeHistory.map((m) => ({ type: 'message', ...m })));
   }
 
-  input.push({ role: 'user', content: body.message });
+  input.push({ type: 'message', role: 'user', content: body.message });
 
   // Build context instructions for Stev3
   let instructions = `You are discussing your technical deep dive with a reader.`;
