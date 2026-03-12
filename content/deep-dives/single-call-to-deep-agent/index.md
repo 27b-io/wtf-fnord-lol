@@ -103,7 +103,7 @@ These are not theoretical thresholds. They're the patterns that show up in produ
 
 **Signal 1: Your context file is growing faster than your features.**
 
-When the JSON is 50KB and growing, it's no longer a context file — it's a badly-structured database. The solution is not to compress it; it's to add a proper state layer. This is also the moment when {{ glossary(term="virtual filesystem", def="A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.") }} per user starts making sense.
+When the JSON is 50KB and growing, it's no longer a context file — it's a badly-structured database. The solution is not to compress it; it's to add a proper state layer. This is also the moment when a per-user {{ glossary(term="virtual filesystem", def="A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.") }} starts making sense.
 
 **Signal 2: Your prompt has conditional branches.**
 
@@ -178,9 +178,9 @@ users/
 
 The {{ glossary(term="virtual filesystem", def="A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.") }} gives each skill its own namespace. The search-personalisation skill reads and writes `state/preferences.json`. The experiment-design skill owns `experiments/`. They don't stomp on each other. Engineers can develop them independently. You can test them independently. You can roll back a skill by reverting its files.
 
-**The critical point:** the virtual filesystem is the abstraction, not the storage. The directory tree above could be literal files on disk, documents in a document store, rows in Postgres, or objects in S3. If you're already running a document database, the natural implementation is a collection per user:
+**The critical point:** the virtual filesystem is the abstraction, not the storage. The directory tree above could be literal files on disk, documents in a document store, rows in Postgres, or objects in S3. Example encoding — if you're already running a document database, a natural mapping is a collection per user:
 
-```
+```text
 users/{uid}/agent_state/search-personalisation
 users/{uid}/agent_state/carousel-generation
 users/{uid}/agent_state/experiments
@@ -282,7 +282,7 @@ The break-even on this cost is roughly Signal 3: when two engineers are blocked 
 
 **When does the virtual filesystem break?**
 
-At some scale of users or history depth, per-cycle reads and writes become the bottleneck — but the threshold depends entirely on what's behind the abstraction. Literal files on disk? You'll hit limits at a different point than document store collections or Postgres rows. The migration path *within* the abstraction (files → SQLite → Postgres → vector search for retrieval) is well-understood, and because the virtual filesystem is a namespace contract rather than a storage implementation, you can swap the backend without changing the skill code that reads and writes to it. For a daily-cycle personalisation agent (runs once per user per day), most storage backends are fine at 100k users. For a real-time agent processing events continuously, you'll need to think about your backend choice sooner.
+At some scale of users or history depth, per-cycle reads and writes become the bottleneck — but the threshold depends entirely on what's behind the abstraction. Literal files on disk? You'll hit limits at a different point than document store collections or Postgres rows. The migration path *within* the abstraction (files → SQLite → Postgres → vector search for retrieval) is well-understood, and because the virtual filesystem is a namespace contract rather than a storage implementation, you can swap the backend without changing the skill code that reads and writes to it. For a daily-cycle personalisation agent (one run per user per day, writing small state objects), you're comfortably in the order of 10^5 users on most storage backends. For a real-time agent processing events continuously, you'll need to think about your backend choice sooner.
 
 **How do you test a planning node?**
 
