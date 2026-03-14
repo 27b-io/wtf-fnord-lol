@@ -103,7 +103,7 @@ These are not theoretical thresholds. They're the patterns that show up in produ
 
 **Signal 1: Your context file is growing faster than your features.**
 
-When the JSON is 50KB and growing, it's no longer a context file — it's a badly-structured database. The solution is not to compress it; it's to add a proper state layer. This is also the moment when {{ glossary(term="virtual filesystem", def="A per-agent or per-user filesystem abstraction — a directory tree of files that the agent treats as its working memory, analogous to a human's scratch pad and long-term storage.") }} per user starts making sense.
+When the JSON is 50KB and growing, it's no longer a context file — it's a badly-structured database. The solution is not to compress it; it's to add a proper state layer. This is also the moment when a per-user {{ glossary(term="virtual filesystem", def="A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.") }} starts making sense.
 
 **Signal 2: Your prompt has conditional branches.**
 
@@ -160,7 +160,7 @@ This is {{ glossary(term="progressive disclosure", def="An architectural princip
 
 ### The Virtual Filesystem
 
-This is the part that sounds clever until you realise it's just a directory.
+This is the part that sounds clever until you realise it's just a namespace convention.
 
 ```
 users/
@@ -176,9 +176,19 @@ users/
       signals.json      ← behavioural signals
 ```
 
-The {{ glossary(term="virtual filesystem", def="A per-agent or per-user filesystem abstraction — a directory tree of files that the agent treats as its working memory, analogous to a human's scratch pad and long-term storage.") }} gives each skill its own namespace. The search-personalisation skill reads and writes `state/preferences.json`. The experiment-design skill owns `experiments/`. They don't stomp on each other. Engineers can develop them independently. You can test them independently. You can roll back a skill by reverting its files.
+The {{ glossary(term="virtual filesystem", def="A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.") }} gives each skill its own namespace. The search-personalisation skill reads and writes `state/preferences.json`. The experiment-design skill owns `experiments/`. They don't stomp on each other. Engineers can develop them independently. You can test them independently. You can roll back a skill by reverting its files.
 
-This is not a novel idea. It's git. For agents.
+**The critical point:** the virtual filesystem is the abstraction, not the storage. The directory tree above could be literal files on disk, documents in a document store, rows in Postgres, or objects in S3. Example encoding — if you're already running a document database, a natural mapping is a collection per user:
+
+```text
+users/{uid}/agent_state/search-personalisation
+users/{uid}/agent_state/carousel-generation
+users/{uid}/agent_state/experiments
+```
+
+Same database. Same billing. New access pattern. The "filesystem" is just the contract that says each skill owns its own namespace with read/write isolation — it doesn't prescribe how the bytes are stored. Pick the storage layer you already operate. The abstraction stays the same regardless.
+
+This is not a novel idea. It's git. For agents. The branching model works whether the underlying store is a filesystem, a document database, or an object store.
 
 ```python
 from langgraph.graph import StateGraph, END
@@ -272,7 +282,7 @@ The break-even on this cost is roughly Signal 3: when two engineers are blocked 
 
 **When does the virtual filesystem break?**
 
-At some scale of users or history depth, reading and writing files per-cycle becomes the bottleneck. The migration path from files to a proper store (SQLite → Postgres → vector search for retrieval) is well-understood, but the trigger point varies enormously by use case. For a daily-cycle personalisation agent (runs once per user per day), files are probably fine at 100k users. For a real-time agent processing events continuously, you'll hit limits much sooner.
+At some scale of users or history depth, per-cycle reads and writes become the bottleneck — but the threshold depends entirely on what's behind the abstraction. Literal files on disk? You'll hit limits at a different point than document store collections or Postgres rows. The migration path *within* the abstraction (files → SQLite → Postgres → vector search for retrieval) is well-understood, and because the virtual filesystem is a namespace contract rather than a storage implementation, you can swap the backend without changing the skill code that reads and writes to it. For a daily-cycle personalisation agent (one run per user per day, writing small state objects), you're comfortably in the order of 10^5 users on most storage backends. For a real-time agent processing events continuously, you'll need to think about your backend choice sooner.
 
 **How do you test a planning node?**
 
