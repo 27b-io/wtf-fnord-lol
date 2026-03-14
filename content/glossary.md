@@ -340,6 +340,6 @@ date = 2026-03-09
 <dd>In traditional RL (like PPO), a separate network estimating expected future reward. GRPO eliminates this by using group-relative comparisons instead.</dd>
 
 <dt>virtual filesystem</dt>
-<dd>A per-agent or per-user filesystem abstraction — a directory tree of files that the agent treats as its working memory, analogous to a human's scratch pad and long-term storage.</dd>
+<dd>A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.</dd>
 
 </dl>
