@@ -20,19 +20,18 @@ If your distributed data is content-addressed, append-heavy, and searched by sim
 **The trick:** Memory systems are "accidentally CRDT-shaped" — content-addressed storage gives you natural idempotency, append-heavy workloads eliminate most conflicts, and fuzzy similarity search means stale data rarely matters. Stop fighting your data model and lean into it.
 {% end %}
 
-## The Consistency Spectrum (Without the Textbook)
+## The Consistency Spectrum (Quick Version)
 
-Every distributed systems course starts with the same slide deck: strong consistency, eventual consistency, the CAP theorem, maybe a Lamport clock diagram. It's all correct and almost entirely useless for making actual engineering decisions.
+Every distributed systems course gives you the same four models. Here's what they actually cost:
 
-Here's what the four models *actually* mean when you're building things.
+| Model | What you get | What you pay | Canonical example |
+|---|---|---|---|
+| **Strong** (serializable) | Every read sees the latest write | 50-200ms cross-region write latency (consensus round-trip) | CockroachDB {{ cite(key="taft2020", title="CockroachDB: The Resilient Geo-Distributed SQL Database", authors="Taft et al.", year="2020", url="https://dl.acm.org/doi/10.1145/3318464.3386134") }} |
+| **Eventual** (tunable) | High write throughput, per-query consistency choice | Stale reads possible; you choose the tradeoff per query | Cassandra |
+| **Read-your-writes** | You always see your own writes; others may lag | Other clients get stale data during replication lag | Redis Cluster |
+| **{{ glossary(term="CRDT", def="Conflict-free Replicated Data Type — a data structure designed so that concurrent updates on different replicas always merge deterministically without coordination, producing the same result regardless of order.") }}** | Automatic conflict resolution; no coordination needed | Only works for commutative operations; not every data structure fits | Riak, Automerge |
 
-**Strong consistency** means every read sees the most recent write. Full stop. If node A writes a value and node B reads it one millisecond later, B sees A's write. This is what {{ glossary(term="CockroachDB", def="A distributed SQL database that provides serializable consistency across multiple nodes using consensus protocols (Raft), at the cost of write latency.") }} gives you — serializable transactions across geographically distributed nodes. The cost is latency. Every write requires a consensus round-trip. In CockroachDB's case, that's Raft consensus across a quorum of replicas, which means cross-region writes take 50-200ms *minimum*. You're paying that tax on every single write, whether or not anyone cares about the ordering.
-
-**Eventual consistency** means replicas will converge *eventually*, but right now they might disagree. {{ glossary(term="Cassandra", def="A distributed NoSQL database designed for high write throughput with tunable consistency — you pick how many replicas must acknowledge a read or write.") }} is the canonical example. Write to any node, it'll propagate. Read from any node, you might get stale data. Cassandra makes this tunable — you can require `QUORUM` reads (majority of replicas agree) or `ONE` (nearest replica, fast but possibly stale). The genius is that you choose per-query. Your billing table gets `QUORUM`. Your activity log gets `ONE`.
-
-**Read-your-writes consistency** is the pragmatic middle. You always see your own writes, but other nodes might lag. This is what most users actually expect — if I save a document and immediately reload, I see my changes. Whether my colleague sees them in 100ms or 2 seconds? Usually doesn't matter. {{ glossary(term="Redis", def="An in-memory data store commonly used as cache or message broker. Redis Cluster uses asynchronous replication — writes go to the primary, replicas catch up later.") }} Cluster operates this way: writes go to the primary, replicas catch up asynchronously, and if you're reading from the same primary you wrote to, you always see your own data.
-
-**CRDTs** — {{ glossary(term="CRDT", def="Conflict-free Replicated Data Type — a data structure designed so that concurrent updates on different replicas always merge deterministically without coordination, producing the same result regardless of order.") }} — take a different approach entirely. Instead of coordinating *when* replicas see writes, you design the data structures so that *it doesn't matter what order they see them*. Any two replicas that have seen the same set of updates will have the same state, regardless of the order those updates arrived. {{ glossary(term="Riak", def="A distributed NoSQL key-value store that pioneered production CRDT support — counters, sets, maps, and flags that automatically resolve conflicts across replicas.") }} pioneered this in production. {{ glossary(term="Automerge", def="A CRDT library implementing a JSON-like document model — multiple users can edit the same document concurrently and changes merge automatically without a central server.") }} brought it to document editing. The catch is that not every data structure has a natural CRDT form. You need operations that commute — where A then B produces the same result as B then A.
+The question isn't "which is best" — it's "which tradeoff matches your data model." Most teams default to strong consistency because it feels safer. That's fine when you're building a bank. When you're building a memory system for AI agents, it's an expensive habit.
 
 ## Why Memory Systems Aren't Databases
 
@@ -47,7 +46,7 @@ Memory systems for AI agents have fundamentally different properties.
 **Append-heavy workload means fewer conflicts.** Ālaya's primary write operation is "store a new memory." Not "update an existing memory's content." The vast majority of writes are appends — new memories created from new experiences. Conflicts require two nodes to modify the *same* record at the *same* time. When your workload is 95% "create new things" and 5% "update metadata on existing things," the conflict surface area shrinks dramatically.
 
 {% callout(type="insight") %}
-The three properties — fuzzy search, content-addressing, append-heavy writes — don't just make eventual consistency *tolerable*. They make strong consistency *actively wasteful*. You're paying a latency tax to guarantee exact ordering on writes that are deduplicated by hash and retrieved by approximate similarity. That's like hiring an armoured car to deliver newspaper clippings.
+Strong consistency for a memory system is an armoured car delivering newspaper clippings. You're paying a latency tax to guarantee exact ordering on writes that are deduplicated by hash and retrieved by approximate similarity.
 {% end %}
 
 ## Accidentally CRDT-Shaped
@@ -60,10 +59,12 @@ The three properties — fuzzy search, content-addressing, append-heavy writes �
 
 **Access counts → G-Counter.** Every time a memory is retrieved, its `access_count` increments. A {{ glossary(term="G-Counter", def="A CRDT counter where each replica maintains its own local counter. The total is the sum across all replicas. Only supports increments — no decrements — making merges trivial.") }} is a CRDT counter where each replica tracks its own count, and the global count is the sum. If cluster A retrieves a memory 3 times and cluster B retrieves it 5 times, the merged access count is 8. No coordination needed.
 
-**Hebbian edge weights → PN-Counter (or just G-Counter).** Ālaya strengthens connections between memories that are frequently co-retrieved — {{ glossary(term="Hebbian learning", def="'Neurons that fire together wire together.' In Ālaya's context: memories retrieved in the same search results get stronger edges between them, making future co-retrieval more likely.") }} applied to associative memory. Edge weights increase when memories are co-accessed. This is naturally a counter — and since Ālaya's weights only increase (there's no explicit "weaken this connection" operation), it's a G-Counter. The Hebbian write queue already batches these updates asynchronously, which is exactly the operation pattern a CRDT counter expects.
+**Hebbian edge weights → G-Counter.** Ālaya strengthens connections between memories that are frequently co-retrieved — {{ glossary(term="Hebbian learning", def="'Neurons that fire together wire together.' In Ālaya's context: memories retrieved in the same search results get stronger edges between them, making future co-retrieval more likely.") }} applied to associative memory. Edge weights increase when memories are co-accessed. Since Ālaya's weights only increase (there's no explicit "weaken this connection" operation), it's a G-Counter. The Hebbian write queue already batches these updates asynchronously, which is exactly the operation pattern a CRDT counter expects.
+
+**The write queue is already CQRS.** {{ glossary(term="CQRS", def="Command Query Responsibility Segregation — separating the write path (commands) from the read path (queries), allowing each to be optimised independently.") }} separates reads from writes, optimising each independently. Ālaya's read path (similarity search → Hebbian boost → ranked results) is latency-sensitive and locally cacheable. Its write path has two channels: primary writes (new memories) go directly to local Qdrant; secondary writes (Hebbian strengthening, access counts) go through an async queue — batched, debounced, fire-and-forget. That queue is already a command channel. Extending it across clusters means shipping the command log to other nodes. Idempotency via content hashes means replaying a command twice is safe. Commutativity of counter increments means order doesn't matter.
 
 {% callout(type="insight") %}
-Ālaya wasn't designed as a CRDT system. It was designed around content hashing, append-heavy writes, and async Hebbian updates because those were the *right engineering decisions* for a memory store. The fact that these decisions produce a data model that maps 1:1 onto CRDTs isn't coincidence — it's convergent evolution. The same constraints (high availability, partition tolerance, eventual convergence) produce the same shapes.
+Ālaya wasn't designed as a CRDT system. But the same constraints — high availability, partition tolerance, eventual convergence — produce the same shapes. Content hashing, append-heavy writes, and async updates aren't "accidentally" CRDT-shaped. They're *inevitably* CRDT-shaped. The engineering intuitions and the formal theory converge because they're solving the same problem.
 {% end %}
 
 ## Edge-Native: Not Just Two Servers
@@ -80,18 +81,6 @@ The edge-native approach: write locally, sync in the background. Cluster A store
 
 This maps directly to how Cassandra handles multi-datacenter replication — each datacenter has local quorum for reads and writes, and cross-datacenter sync is asynchronous {{ cite(key="cassandra2010", title="Cassandra - A Decentralized Structured Storage System", authors="Lakshman & Malik", year="2010", url="https://www.cs.cornell.edu/projects/ladis2009/papers/lakshman-ladis2009.pdf") }}. The difference is that Ālaya's data model makes this *even simpler* than Cassandra's, because content-addressing eliminates the need for vector clocks or conflict resolution on the common (append) path.
 
-## CQRS: Already Doing It
-
-{{ glossary(term="CQRS", def="Command Query Responsibility Segregation — separating the write path (commands) from the read path (queries), allowing each to be optimised independently.") }} separates reads from writes, optimising each independently. Ālaya already does this.
-
-The read path is similarity search: query embedding → Qdrant nearest-neighbour lookup → Hebbian boost → ranked results. It's latency-sensitive and locally cacheable.
-
-The write path has two channels. Primary writes (new memories) go directly to the local Qdrant instance. Secondary writes (Hebbian edge strengthening, access count updates) go through an async write queue — batched, debounced, fire-and-forget from the caller's perspective.
-
-That write queue is the CQRS command channel. It already tolerates delays. It already batches. Extending it across clusters is a matter of shipping the command log to other nodes, not rearchitecting the system. Each cluster processes commands from its local queue *and* replayed commands from other clusters. Idempotency via content hashes means replaying a command twice is safe. Commutativity of counter increments means order doesn't matter.
-
-Compare this to Automerge's approach {{ cite(key="automerge2019", title="A Conflict-Free Replicated JSON Datatype", authors="Kleppmann & Beresford", year="2019", url="https://arxiv.org/abs/1608.03960") }}, where every operation is captured in a log that's replayed on each replica. Automerge solves the much harder problem of concurrent text editing — insertions and deletions at arbitrary positions. Ālaya's operations are simpler (append, increment, LWW-update), which means the sync protocol can be simpler too.
-
 ## The Supersede Problem
 
 There is *one* real conflict scenario, and it's worth being honest about: superseded memories.
@@ -104,11 +93,23 @@ In a multi-cluster setup, it gets tricky. Cluster A has both the original and th
 The supersede problem is where pure G-Sets break down. Supersession is a *relationship* between memories, not a property of individual memories. You need to replicate the edge (CONTRADICTS, SUPERSEDES) alongside the nodes. This is solvable — Riak's CRDT maps handle nested structures — but it's the one place where "just union the sets" isn't enough.
 {% end %}
 
-Practically, this matters less than it sounds. Supersession is rare — most memories don't get corrected. When it does happen, the window between "correction written" and "correction synced" is bounded by the sync interval. And the worst case isn't data loss — it's an agent using slightly stale information for a few minutes. For a memory system, that's an acceptable tradeoff. For a billing system, it would be catastrophic.
+Supersession is rare — most memories don't get corrected. When it does happen, the window between "correction written" and "correction synced" is bounded by the sync interval. The worst case isn't data loss — it's an agent using slightly stale information for a few minutes. For a memory system, that's an acceptable tradeoff.
+
+## What You Actually Lose
+
+**No global ordering.** You can't answer "what was the most recently created memory across all clusters?" without querying all clusters. For a memory system, this rarely matters — you search by *relevance*, not by creation time.
+
+**Temporary inconsistency windows.** A memory exists on cluster A but not cluster B for some bounded period. If an agent is mid-conversation on cluster B and needs a memory that was just created on cluster A, it won't find it. Mitigation: keep sync intervals short (seconds, not minutes).
+
+**Supersession lag.** Corrections take time to propagate. An agent might use outdated information during the sync window. Mitigation: for high-stakes corrections, trigger sync immediately rather than waiting for the background interval.
+
+**Debugging is harder.** "Which cluster has which version of what?" is a question you'll need tooling to answer. Cassandra operators know this pain. Content-addressing helps (the hash *is* the version), but you still need observability into sync state.
+
+When *do* you need strong consistency? When the data represents commitments — account balances, inventory counts, API rate limits, auth tokens. Anything where "two nodes disagreed for 3 seconds" means real-world consequences. Memories don't qualify.
 
 ## The Comparison Table
 
-How do real distributed systems handle the properties Ālaya needs?
+With those tradeoffs on the table, here's how real distributed systems handle the properties Ālaya needs:
 
 | Property | CockroachDB | Cassandra | Riak (CRDTs) | Redis Cluster | **Ālaya (proposed)** |
 |---|---|---|---|---|---|
@@ -117,35 +118,18 @@ How do real distributed systems handle the properties Ālaya needs?
 | Conflict resolution | Serializable txns | LWW / vector clocks | Automatic (CRDT merge) | LWW | Content-hash dedup + CRDT |
 | Idempotent writes | No (needs app logic) | No (needs app logic) | Yes (CRDT property) | No | Yes (content-addressing) |
 | Append-heavy optimisation | No | Yes (log-structured) | Yes | No | Yes (by design) |
-| Fuzzy query tolerance | N/A | N/A | N/A | N/A | Native (vector similarity) |
 
 {% callout(type="question") %}
-**Open question:** Should the sync protocol be push-based (each cluster broadcasts writes) or pull-based (clusters poll each other)? Push is lower latency but more complex. Pull is simpler but introduces polling intervals. A hybrid — push for primary writes, pull for Hebbian counter updates — might be the pragmatic choice. Cassandra uses push (gossip protocol). Automerge typically uses pull (sync when connected). The right answer depends on how many clusters you're running and how stable the network is.
+**Open question:** Should the sync protocol be push-based (each cluster broadcasts writes) or pull-based (clusters poll each other)? Push is lower latency but more complex. Pull is simpler but introduces polling intervals. A hybrid — push for primary writes, pull for Hebbian counter updates — might be the pragmatic choice. Cassandra uses push (gossip protocol {{ cite(key="decandia2007", title="Dynamo: Amazon's Highly Available Key-value Store", authors="DeCandia et al.", year="2007", url="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf") }}). The right answer depends on how many clusters you're running and how stable the network is.
 {% end %}
 
-## What You Actually Lose
-
-Honesty time. Eventual consistency *does* cost you things.
-
-**No global ordering.** You can't answer "what was the most recently created memory across all clusters?" without querying all clusters. For a memory system, this rarely matters — you search by *relevance*, not by creation time.
-
-**Temporary inconsistency windows.** A memory exists on cluster A but not cluster B for some bounded period. If an agent is mid-conversation on cluster B and needs a memory that was just created on cluster A, it won't find it. This is the price of local writes. Mitigation: keep sync intervals short (seconds, not minutes).
-
-**Supersession lag.** Corrections take time to propagate. An agent might use outdated information during the sync window. Mitigation: for high-stakes corrections, sync can be triggered immediately rather than waiting for the background interval.
-
-**Debugging is harder.** "Which cluster has which version of what?" is a question you'll need tooling to answer. Cassandra operators know this pain. Content-addressing helps (the hash *is* the version), but you still need observability into sync state.
-
-When *do* you need strong consistency? When the data represents commitments. Account balances. Inventory counts. API rate limits. Auth tokens. Anything where "two nodes disagreed for 3 seconds" means real-world consequences. Memories don't qualify. If two agents briefly disagree about whether Ray prefers .zshrc or .zshenv, the universe continues.
-
-## The Bigger Picture
-
-There's a broader trend here: AI infrastructure is moving toward edge-native architectures not because engineers think it's cool, but because the latency requirements demand it. An AI agent thinking mid-conversation can't wait 200ms for cross-region consensus on every memory write. The cognitive proxy needs sub-10ms memory access to stay within the latency budget of a streaming response.
-
-The systems that win will be the ones that match their consistency model to their data model, not the ones that default to strong consistency because "it's safer." Cassandra proved this for web-scale writes. Riak proved it for IoT data. The memory systems of AI agents are the next domain where eventual consistency with CRDT semantics is the obvious fit — once you stop trying to make them behave like relational databases.
+## The Formalisation
 
 If you squint at Ālaya's data model — content-hashed entries in a grow-only set, LWW metadata, monotonic counters for access and edge weights, async write queues that batch and debounce — you're looking at a CRDT system that doesn't know it's a CRDT system. The engineering intuitions that led to this design (dedup by hash, append-mostly, async strengthening) are the same intuitions that led Shapiro et al. to formalise CRDTs in 2011 {{ cite(key="shapiro2011", title="Conflict-free Replicated Data Types", authors="Shapiro, Preguiça, Baquero & Zawirski", year="2011", url="https://hal.inria.fr/inria-00609399v1/document") }}.
 
-The formalisation matters because it gives you guarantees without coordination. Strong Eventual Consistency — {{ glossary(term="SEC", def="Strong Eventual Consistency — the guarantee provided by CRDTs: any two replicas that have processed the same set of updates will be in the same state, regardless of order. Stronger than eventual consistency (which only promises 'eventually'), weaker than strong consistency (which demands real-time agreement).") }} — says that any two replicas that have processed the same set of updates are in the same state, regardless of order. No consensus protocol. No leader election. No split-brain scenarios. Just math.
+The formalisation matters because it gives you guarantees without coordination. For append and increment operations — the vast majority of the workload — Strong Eventual Consistency ({{ glossary(term="SEC", def="Strong Eventual Consistency — the guarantee provided by CRDTs: any two replicas that have processed the same set of updates will be in the same state, regardless of order. Stronger than eventual consistency (which only promises 'eventually'), weaker than strong consistency (which demands real-time agreement).") }}) is mathematical: any two replicas that have processed the same set of updates are in the same state, regardless of order. No consensus protocol. No leader election. No split-brain scenarios. For the 5% involving supersession and relationship replication, you still need engineering judgment — but the hard part is solved {{ cite(key="ongaro2014", title="In Search of an Understandable Consensus Algorithm (Extended Version)", authors="Ongaro & Ousterhout", year="2014", url="https://raft.github.io/raft.pdf") }}.
+
+An AI agent thinking mid-conversation can't wait 200ms for cross-region consensus on every memory write. The cognitive proxy needs sub-10ms memory access to stay within the latency budget of a streaming response. The systems that win here will be the ones that match their consistency model to their data model — not the ones that default to strong consistency because "it's safer."
 
 ## Bottom Line
 
@@ -153,4 +137,4 @@ The formalisation matters because it gives you guarantees without coordination. 
 
 **Skip this if:** you're building financial ledgers or inventory systems. You need strong consistency. That's fine. Pay the tax.
 
-**The punchline:** Strong consistency is a tax you pay for guarantees you don't need in a memory system. The right model is eventual consistency with content-addressed dedup. And if you squint, that's just CRDTs with extra steps.
+**The punchline:** If your data is content-hashed, append-heavy, and similarity-searched, congratulations — you've already built a CRDT system. The only question is whether you'll formalise it or keep pretending it's eventual consistency with good vibes.
