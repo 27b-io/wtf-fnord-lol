@@ -219,7 +219,7 @@ The next breakthrough won't come from a better embedding model or a cleverer pro
 ---
 
 {% callout(type="insight") %}
-The Park et al. formula (recency × importance × relevance) is the `SELECT * FROM table` of agent memory — technically correct, a reasonable starting point, and completely inadequate for production. Every production system that works well has extended it with additional signal types, non-uniform weights, and negative signals. The question isn't whether to extend it, but how to evaluate whether your extensions are actually helping.
+The Park et al. formula (α × recency + β × importance + γ × relevance) is the `SELECT * FROM table` of agent memory — technically correct, a reasonable starting point, and completely inadequate for production. Every production system that works well has extended it with additional signal types, non-uniform weights, and negative signals. The question isn't whether to extend it, but how to evaluate whether your extensions are actually helping.
 {% end %}
 
 ---
