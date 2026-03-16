@@ -949,6 +949,227 @@ article {
   }
 }
 
+// ─── Section header ────────────────────────────
+
+.section-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  h1 {
+    font-family: $display;
+    font-size: 2rem;
+    font-weight: 700;
+    color: $fg;
+  }
+
+  .section-tagline {
+    font-family: $mono;
+    font-size: 0.7rem;
+    color: $fg-muted;
+    margin-top: 0.4rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+}
+
+// ─── Theme tabs ────────────────────────────────
+
+.theme-tabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.theme-tab {
+  font-family: $mono;
+  font-size: 0.68rem;
+  color: $fg-muted;
+  background: rgba($accent, 0.04);
+  border: 1px solid $border;
+  border-radius: 3px;
+  padding: 0.35em 0.8em;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: $accent;
+    background: rgba($accent, 0.08);
+  }
+
+  &.active {
+    color: $accent;
+    background: rgba($accent, 0.12);
+    border-color: rgba($accent, 0.3);
+  }
+}
+
+// ─── Theme panels ──────────────────────────────
+
+.theme-panel {
+  display: none;
+  &.active { display: block; }
+}
+
+.theme-intro {
+  font-family: $serif;
+  font-size: 0.9rem;
+  color: $fg-muted;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  text-align: center;
+}
+
+// ─── Card grid ─────────────────────────────────
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+.post-card {
+  display: block;
+  background: $bg-raised;
+  border: 1px solid $border;
+  border-radius: 6px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.3s, transform 0.2s;
+
+  &:hover {
+    border-color: $accent;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent;
+    outline-offset: 2px;
+  }
+}
+
+.card-svg {
+  width: 100%;
+  height: 100px;
+  display: block;
+  object-fit: cover;
+}
+
+.card-body {
+  padding: 0.7rem 0.85rem;
+}
+
+.card-title {
+  font-family: $display;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $fg;
+  margin: 0 0 0.25rem;
+  line-height: 1.3;
+}
+
+.card-desc {
+  font-size: 0.72rem;
+  color: $fg-muted;
+  line-height: 1.5;
+  margin: 0 0 0.5rem;
+}
+
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-reading-time {
+  font-family: $mono;
+  font-size: 0.6rem;
+  color: $fg-dim;
+}
+
+.card-tags {
+  display: flex;
+  gap: 0.3rem;
+}
+
+// ─── SVG animations ────────────────────────────
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(3px, -2px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ambient {
+  animation: drift 8s ease-in-out infinite;
+}
+
+.ambient-pulse {
+  animation: pulse 4s ease-in-out infinite;
+}
+
+.ambient-rotate {
+  animation: rotate-slow 30s linear infinite;
+  transform-origin: center;
+}
+
+.hover-reveal {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.hover-draw {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  transition: stroke-dashoffset 0.8s ease;
+}
+
+.post-card:hover .hover-reveal { opacity: 1; }
+.post-card:hover .hover-draw { stroke-dashoffset: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient, .ambient-pulse, .ambient-rotate {
+    animation: none !important;
+  }
+  .hover-draw {
+    transition: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  .hover-reveal {
+    transition: none !important;
+  }
+}
+
+// ─── Everything Else overflow ──────────────────
+
+.theme-overflow {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid $border;
+}
+
+.theme-overflow-title {
+  font-family: $mono;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: $fg-dim;
+  margin-bottom: 1rem;
+}
+
 // ─── Responsive ─────────────────────────────────
 
 @media (max-width: 600px) {
@@ -976,6 +1197,18 @@ article {
   }
 
   .post-nav-link.post-nav-older { text-align: left; }
+
+  .card-grid { grid-template-columns: 1fr; }
+
+  .theme-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.3rem;
+  }
+
+  .theme-tab { white-space: nowrap; }
 }
 
 // ─── Search ─────────────────────────────────────
