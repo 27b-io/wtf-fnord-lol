@@ -12,7 +12,8 @@
     "format": "prettier --check 'worker/**/*.ts' 'scripts/**/*.ts'",
     "format:fix": "prettier --write 'worker/**/*.ts' 'scripts/**/*.ts'",
     "check": "npm run typecheck && npm run lint && npm run format && zola build",
-    "glossary": "tsx scripts/generate-glossary.ts"
+    "glossary": "tsx scripts/generate-glossary.ts",
+    "heroes": "tsx scripts/generate-hero-svgs.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260207.0",
