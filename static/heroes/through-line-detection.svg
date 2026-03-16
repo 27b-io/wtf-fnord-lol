@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120">
+<rect width="300" height="120" fill="#0a0a0f"/>
+<rect x="210.2" y="71.6" width="48.7" height="2.1" rx="1" fill="#6cb4ee" opacity="0.15" class="ambient" style="animation-delay:2.1s;animation-duration:8.5s"/>
+<rect x="193.0" y="36.2" width="24.5" height="2.6" rx="1" fill="#6cb4ee" opacity="0.15" class="ambient" style="animation-delay:1.8s;animation-duration:7.3s"/>
+<circle cx="258.8" cy="68.7" r="2.4" fill="#6cb4ee" opacity="0.5" class="ambient" style="animation-delay:5.6s;animation-duration:9.0s"/>
+<circle cx="135.5" cy="94.4" r="2.8" fill="#c6a07a" opacity="0.5" class="ambient" style="animation-delay:5.7s;animation-duration:7.7s"/>
+<line x1="139.9" y1="32.2" x2="209.2" y2="46.8" stroke="#6cb4ee" stroke-width="0.5" opacity="0.4" class="hover-draw" stroke-dasharray="200" style="transition-delay:0.00s"/>
+<circle cx="120.8" cy="42.5" r="2" fill="#6cb4ee" opacity="0.5" class="hover-reveal"/>
+</svg>

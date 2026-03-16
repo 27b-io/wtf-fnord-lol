@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120">
+<rect width="300" height="120" fill="#0a0a0f"/>
+<circle cx="73.9" cy="92.7" r="34.8" fill="none" stroke="#c6a07a" stroke-width="0.5" opacity="0.3" class="ambient-pulse" style="animation-delay:1.3s;animation-duration:6.8s"/>
+<rect x="66.4" y="85.9" width="54.9" height="2.0" rx="1" fill="#6cb4ee" opacity="0.15" class="ambient" style="animation-delay:3.5s;animation-duration:8.3s"/>
+<rect x="257.3" y="48.6" width="22.7" height="2.1" rx="1" fill="#6cb4ee" opacity="0.15" class="ambient" style="animation-delay:2.6s;animation-duration:5.3s"/>
+<circle cx="240.6" cy="72.2" r="29.7" fill="none" stroke="#c6a07a" stroke-width="0.5" opacity="0.3" class="ambient-pulse" style="animation-delay:0.6s;animation-duration:5.4s"/>
+<line x1="251.3" y1="88.2" x2="324.6" y2="105.4" stroke="#6cb4ee" stroke-width="0.5" opacity="0.4" class="hover-draw" stroke-dasharray="200" style="transition-delay:0.00s"/>
+<circle cx="84.1" cy="34.5" r="2" fill="#c6a07a" opacity="0.5" class="hover-reveal"/>
+<circle cx="213.2" cy="52.7" r="2" fill="#c6a07a" opacity="0.5" class="hover-reveal"/>
+</svg>
