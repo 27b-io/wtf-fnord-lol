@@ -40,6 +40,13 @@ jobs:
         run: |
           git diff --exit-code content/glossary.md || (echo "ERROR: Generated glossary differs from committed version. Run 'npx tsx scripts/generate-glossary.ts' and commit the result." && exit 1)
 
+      - name: Generate hero SVGs
+        run: npx tsx scripts/generate-hero-svgs.ts
+
+      - name: Verify generated heroes are committed
+        run: |
+          git diff --exit-code static/heroes/ || (echo "ERROR: Generated hero SVGs differ from committed versions. Run 'npx tsx scripts/generate-hero-svgs.ts' and commit the results." && exit 1)
+
       - name: Zola build
         run: zola build
 
