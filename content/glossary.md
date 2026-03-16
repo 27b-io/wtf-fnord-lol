@@ -31,7 +31,7 @@ date = 2026-03-09
 <dd>The directional change in a user's behavior over time — not just what they do, but whether they're doing it more or less, and how fast that's changing.</dd>
 
 <dt>BM25</dt>
-<dd>Best Matching 25 — a classic keyword-based scoring algorithm that considers term frequency, inverse document frequency, and document length. Often outperforms embeddings for exact-match queries and entity lookups.</dd>
+<dd>Best Matching 25 — a classic probabilistic information retrieval algorithm that scores documents based on term frequency, inverse document frequency, and document length. Often used alongside semantic search for keyword-heavy queries.</dd>
 
 <dt>CatBoost</dt>
 <dd>Yandex's gradient boosting library, notable for native ordered-boosting on categorical features (avoids target leakage) and symmetric tree growth for good generalisation.</dd>
@@ -47,6 +47,12 @@ date = 2026-03-09
 
 <dt>contrastive objective</dt>
 <dd>A loss function that pushes positive (user, item) pairs closer in embedding space and negative pairs further apart. The model learns what 'relevant' means by seeing examples of both.</dd>
+
+<dt>CQRS</dt>
+<dd>Command Query Responsibility Segregation — separating the write path (commands) from the read path (queries), allowing each to be optimised independently.</dd>
+
+<dt>CRDT</dt>
+<dd>Conflict-free Replicated Data Type — a data structure designed so that concurrent updates on different replicas always merge deterministically without coordination, producing the same result regardless of order.</dd>
 
 <dt>cross-features</dt>
 <dd>Features that depend on both user and item together, like 'has this user listened to this creator before?'. The most powerful ranking signals, but require seeing both sides simultaneously.</dd>
@@ -68,6 +74,9 @@ date = 2026-03-09
 
 <dt>diversity injection</dt>
 <dd>A broader term for any intervention that increases the variety of content served to a user, encompassing exploration slots, serendipity injection, and algorithmic diversity mechanisms.</dd>
+
+<dt>Dot</dt>
+<dd>A personal AI built by New Computer that maintains long-term memory of user preferences and context. Uses an agentic memory system that dynamically structures information during creation for later retrieval.</dd>
 
 <dt>dot product</dt>
 <dd>The sum of element-wise products of two vectors. Measures alignment in the embedding space. Higher = more relevant.</dd>
@@ -96,6 +105,9 @@ date = 2026-03-09
 <dt>empathy-not-surveillance</dt>
 <dd>A design principle: the system should act on emotional inference without exposing it. The output should feel attuned, not monitored.</dd>
 
+<dt>eventual consistency</dt>
+<dd>A consistency model where replicas are allowed to temporarily disagree, but will converge to the same state given enough time without new writes.</dd>
+
 <dt>exploration slots</dt>
 <dd>Dedicated positions in a recommendation feed reserved for content outside a user's established preference profile, used to prevent filter bubble formation and discover new user interests.</dd>
 
@@ -117,6 +129,12 @@ date = 2026-03-09
 <dt>frees the underlying dataset</dt>
 <dd>Specifically, free_raw_data=True releases the Python-side raw data after Dataset construction. The internal LightGBM Dataset still exists, but any code that later needs the original raw data (e.g., setting references, modifying metadata, or reconstructing the Dataset) will silently get garbage.</dd>
 
+<dt>G-Counter</dt>
+<dd>A CRDT counter where each replica maintains its own local counter. The total is the sum across all replicas. Only supports increments — no decrements — making merges trivial.</dd>
+
+<dt>G-Set</dt>
+<dd>A CRDT set that only supports adding elements, never removing them. Merging two G-Sets is just set union — trivially conflict-free.</dd>
+
 <dt>generative recommendation</dt>
 <dd>Using LLMs to generate recommendations directly rather than scoring pre-computed candidate lists. Collapses the candidate retrieval + scoring pipeline but introduces latency and cost tradeoffs.</dd>
 
@@ -132,11 +150,17 @@ date = 2026-03-09
 <dt>habituate</dt>
 <dd>The psychological process by which repeated exposure to the same stimulus reduces response. In notification systems, sending the same message repeatedly causes users to ignore it — even if it was initially the most effective option.</dd>
 
+<dt>Hebbian learning</dt>
+<dd>'Neurons that fire together wire together.' In Ālaya's context: memories retrieved in the same search results get stronger edges between them, making future co-retrieval more likely.</dd>
+
 <dt>Histogram-based splitting</dt>
 <dd>Discretising continuous features into bins (256 by default) so finding the best split scans bins rather than sorting the full dataset. O(bins) instead of O(n·log(n)).</dd>
 
 <dt>hyperparameter tuning</dt>
 <dd>Systematically searching for the best model configuration (learning rate, tree depth, regularisation, etc.) using techniques like Bayesian optimisation or random search.</dd>
+
+<dt>idempotency</dt>
+<dd>The property where applying an operation multiple times produces the same result as applying it once — crucial for distributed systems where messages can be delivered more than once.</dd>
 
 <dt>In-batch negatives</dt>
 <dd>Using other users' positive items in the same training batch as negatives. Simple, free, surprisingly effective at batch sizes of 4096+.</dd>
@@ -153,6 +177,9 @@ date = 2026-03-09
 <dt>LangGraph</dt>
 <dd>A framework for building stateful, multi-actor LLM applications as directed graphs — nodes are callables (LLM calls, tools, functions), edges are conditional transitions.</dd>
 
+<dt>LangSmith</dt>
+<dd>LangChain's observability and evaluation platform for LLM applications. Provides tracing, dataset management, experiment comparison, and evaluator frameworks for systematic testing.</dd>
+
 <dt>Leaf-wise growth</dt>
 <dd>A tree growth strategy that always splits the leaf with the highest loss reduction, regardless of depth. Produces unbalanced trees that reduce error faster per split, but can overfit more easily on small datasets.</dd>
 
@@ -161,6 +188,9 @@ date = 2026-03-09
 
 <dt>logged intentions</dt>
 <dd>Behavioral events that represent an intentional act being executed — a user consciously recording or marking an action as deliberate, rather than the system passively observing it.</dd>
+
+<dt>LWW-Register</dt>
+<dd>Last-Writer-Wins Register — a CRDT where each update carries a timestamp, and the value with the highest timestamp wins. Simple, effective, occasionally surprising when clocks disagree.</dd>
 
 <dt>mcp-memory-service</dt>
 <dd>An open-source MCP server providing persistent, semantically searchable memory with knowledge graph relationships, emotional analysis, salience scoring, and Hebbian learning. Used by AI agents for long-term memory.</dd>
@@ -240,6 +270,12 @@ date = 2026-03-09
 <dt>query expansion</dt>
 <dd>The process of adding related terms to a user's search query to improve recall. 'sleep' might expand to 'sleep hygiene, circadian rhythm, REM' — or to 'shift work fatigue, microsleeps, alertness' depending on context.</dd>
 
+<dt>RAG</dt>
+<dd>Retrieval-Augmented Generation. The pattern of retrieving relevant documents from a knowledge base and injecting them into an LLM's context window before generation. Only as good as the retrieval.</dd>
+
+<dt>RAGAS</dt>
+<dd>Retrieval-Augmented Generation Assessment. An open-source framework for evaluating RAG pipelines with metrics like faithfulness, answer relevancy, context precision, and context recall.</dd>
+
 <dt>RALF</dt>
 <dd>Accuracy-Aware Scheduling for Feature Store Maintenance (Wooders et al., VLDB 2024). A scheduling framework that prioritizes feature updates by their impact on downstream prediction accuracy, not by how stale they are.</dd>
 
@@ -266,6 +302,9 @@ date = 2026-03-09
 
 <dt>search suggestion chips</dt>
 <dd>UI elements that appear below the search bar showing related or suggested queries. In a personalized system, these can be pre-generated from the same expansion_terms structure — surfacing the expansion before the user even completes their query.</dd>
+
+<dt>SEC</dt>
+<dd>Strong Eventual Consistency — the guarantee provided by CRDTs: any two replicas that have processed the same set of updates will be in the same state, regardless of order. Stronger than eventual consistency (which only promises 'eventually'), weaker than strong consistency (which demands real-time agreement).</dd>
 
 <dt>semantic signals</dt>
 <dd>Signals derived from the meaning of content — embeddings, topic models, entity extraction. 'This document is about X.' Strength: handles cold start. Weakness: doesn't know what the user actually wants.</dd>
@@ -306,8 +345,14 @@ date = 2026-03-09
 <dt>structured output</dt>
 <dd>LLM response constrained to a predefined schema, typically JSON. Enables programmatic consumption without fragile string parsing.</dd>
 
+<dt>summary evaluators</dt>
+<dd>Experiment-level evaluators in LangSmith that receive the complete set of runs and examples after all individual evaluations complete. Used for aggregate metrics like precision, recall, and F1 that only make sense across an entire dataset.</dd>
+
 <dt>surveillance language</dt>
 <dd>Copy or UI text that exposes the system's knowledge of a user's behavioural patterns — time-based labels, frequency references, habit callouts. Technically accurate, socially wrong.</dd>
+
+<dt>synthetic evaluation data</dt>
+<dd>Test data generated by LLMs to simulate realistic user scenarios while preserving privacy. Includes synthetic user backstories, conversation histories, and labeled relevance judgments.</dd>
 
 <dt>TabPFN v2</dt>
 <dd>A pretrained transformer that performs in-context learning on tabular data — you pass it a dataset, it predicts, no gradient updates needed. Published in Nature, 2025.</dd>
@@ -340,6 +385,6 @@ date = 2026-03-09
 <dd>In traditional RL (like PPO), a separate network estimating expected future reward. GRPO eliminates this by using group-relative comparisons instead.</dd>
 
 <dt>virtual filesystem</dt>
-<dd>A per-agent or per-user filesystem abstraction — a directory tree of files that the agent treats as its working memory, analogous to a human's scratch pad and long-term storage.</dd>
+<dd>A per-agent or per-user namespace abstraction — a logical directory tree that the agent treats as its working memory, backed by whatever storage layer you already have. The 'filesystem' is the contract, not the implementation.</dd>
 
 </dl>
