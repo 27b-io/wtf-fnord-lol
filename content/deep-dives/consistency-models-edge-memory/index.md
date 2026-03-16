@@ -120,7 +120,7 @@ With those tradeoffs on the table, here's how real distributed systems handle th
 | Append-heavy optimisation | No | Yes (log-structured) | Yes | No | Yes (by design) |
 
 {% callout(type="question") %}
-**Open question:** Should the sync protocol be push-based (each cluster broadcasts writes) or pull-based (clusters poll each other)? Push is lower latency but more complex. Pull is simpler but introduces polling intervals. A hybrid — push for primary writes, pull for Hebbian counter updates — might be the pragmatic choice. Cassandra uses push (gossip protocol {{ cite(key="decandia2007", title="Dynamo: Amazon's Highly Available Key-value Store", authors="DeCandia et al.", year="2007", url="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf") }}). The right answer depends on how many clusters you're running and how stable the network is.
+**Open question:** Should the sync protocol be push-based (each cluster broadcasts writes) or pull-based (clusters poll each other)? Push is lower latency but more complex. Pull is simpler but introduces polling intervals. A hybrid — push for primary writes, pull for Hebbian counter updates — might be the pragmatic choice. Cassandra's Dynamo-inspired gossip protocol {{ cite(key="decandia2007", title="Dynamo: Amazon's Highly Available Key-value Store", authors="DeCandia et al.", year="2007", url="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf") }} is the canonical example of push-based dissemination. The right answer depends on how many clusters you're running and how stable the network is.
 {% end %}
 
 ## The Formalisation
