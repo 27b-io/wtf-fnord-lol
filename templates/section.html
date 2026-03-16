@@ -2,21 +2,166 @@
 
 {% block content %}
 {% if section.title %}
-<h1>{{ section.title }}</h1>
+<div class="section-header">
+  <h1>{{ section.title }}</h1>
+  <p class="section-tagline">Papers, architectures, and systems explained without the bullshit</p>
+</div>
 {% endif %}
 
-<ul class="post-list">
-  {% for page in section.pages %}
-  <li>
-    <a href="{{ page.permalink }}">
-      <span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span>
-      <div class="post-title">{{ page.title }}</div>
-      {% if page.description %}
-      <div class="post-summary">{{ page.description }}</div>
-      {% endif %}
-      <span class="post-reading-time">{{ page.reading_time }} min</span>
-    </a>
-  </li>
+{# ── Theme tabs ──────────────────────────────── #}
+{% if section.extra.themes %}
+<div class="theme-tabs" role="tablist">
+  {% for theme in section.extra.themes %}
+  <button class="theme-tab{% if loop.first %} active{% endif %}"
+          role="tab"
+          aria-selected="{% if loop.first %}true{% else %}false{% endif %}"
+          aria-controls="theme-{{ theme.slug }}"
+          data-theme="{{ theme.slug }}"
+          onclick="switchTab('{{ theme.slug }}')">
+    {{ theme.name }}
+  </button>
   {% endfor %}
-</ul>
+</div>
+
+{# ── Theme panels ────────────────────────────── #}
+{% for theme in section.extra.themes %}
+<div class="theme-panel{% if loop.first %} active{% endif %}"
+     id="theme-{{ theme.slug }}"
+     role="tabpanel">
+  <p class="theme-intro">{{ theme.intro }}</p>
+
+  <div class="card-grid">
+    {# Best-match: assign each page to theme with highest tag overlap #}
+    {% for page in section.pages %}
+      {% set_global score = 0 %}
+      {% if page.taxonomies.tags %}
+        {% for tag in page.taxonomies.tags %}
+          {% if theme.match_tags is containing(tag) %}
+            {% set_global score = score + 1 %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      {# Check if this theme is the best match for this page #}
+      {% set_global is_best = false %}
+      {% if score > 0 %}
+        {% set_global best_score = 0 %}
+        {% set_global best_slug = "" %}
+        {% for t in section.extra.themes %}
+          {% set_global t_score = 0 %}
+          {% if page.taxonomies.tags %}
+            {% for tag in page.taxonomies.tags %}
+              {% if t.match_tags is containing(tag) %}
+                {% set_global t_score = t_score + 1 %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {% if t_score > best_score %}
+            {% set_global best_score = t_score %}
+            {% set_global best_slug = t.slug %}
+          {% endif %}
+        {% endfor %}
+        {% if best_slug == theme.slug %}
+          {% set_global is_best = true %}
+        {% endif %}
+      {% endif %}
+
+      {% if is_best %}
+      <a href="{{ page.permalink }}" class="post-card">
+        <img src="/heroes/{{ page.slug }}.svg" alt="" class="card-svg" loading="lazy"/>
+        <div class="card-body">
+          <h3 class="card-title">{{ page.title }}</h3>
+          {% if page.description %}
+          <p class="card-desc">{{ page.description | truncate(length=120) }}</p>
+          {% endif %}
+          <div class="card-meta">
+            <span class="card-reading-time">{{ page.reading_time }} min</span>
+            {% if page.taxonomies.tags %}
+            <span class="card-tags">
+              {% for tag in page.taxonomies.tags | slice(end=3) %}
+              <span class="post-tag">{{ tag }}</span>
+              {% endfor %}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{# ── Everything Else (unmatched posts) ───────── #}
+{% set_global has_overflow = false %}
+{% for page in section.pages %}
+  {% set_global matched = false %}
+  {% if page.taxonomies.tags %}
+    {% for theme in section.extra.themes %}
+      {% for tag in page.taxonomies.tags %}
+        {% if theme.match_tags is containing(tag) %}
+          {% set_global matched = true %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+  {% if not matched %}
+    {% set_global has_overflow = true %}
+  {% endif %}
+{% endfor %}
+
+{% if has_overflow %}
+<div class="theme-overflow">
+  <h2 class="theme-overflow-title">Everything Else</h2>
+  <ul class="post-list">
+    {% for page in section.pages %}
+      {% set_global matched = false %}
+      {% if page.taxonomies.tags %}
+        {% for theme in section.extra.themes %}
+          {% for tag in page.taxonomies.tags %}
+            {% if theme.match_tags is containing(tag) %}
+              {% set_global matched = true %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+      {% if not matched %}
+      <li>
+        <a href="{{ page.permalink }}">
+          <span class="post-date">{{ page.date | date(format="%Y-%m-%d") }}</span>
+          <div class="post-title">{{ page.title }}</div>
+          {% if page.description %}
+          <div class="post-summary">{{ page.description }}</div>
+          {% endif %}
+          <span class="post-reading-time">{{ page.reading_time }} min</span>
+        </a>
+      </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% endif %}
+
+<script>
+function switchTab(slug) {
+  document.querySelectorAll('.theme-tab').forEach(function(t) {
+    var active = t.getAttribute('data-theme') === slug;
+    t.classList.toggle('active', active);
+    t.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('.theme-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === 'theme-' + slug);
+  });
+  history.replaceState(null, '', '#' + slug);
+}
+(function() {
+  var hash = location.hash.replace('#', '');
+  if (hash) {
+    var tab = document.querySelector('.theme-tab[data-theme="' + hash + '"]');
+    if (tab) switchTab(hash);
+  }
+})();
+</script>
 {% endblock %}
