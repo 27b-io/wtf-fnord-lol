@@ -30,7 +30,7 @@ Each tab shows:
 
 **Tab switching**: Vanilla JS, no page reload. URL hash updates on tab switch (`#rec-systems`, `#personalization`, etc.) for deep-linking. Default tab on load: first theme, or hash-specified theme.
 
-**Mobile (<700px)**: Tabs become horizontally scrollable strip (`overflow-x: auto`). Cards go single-column.
+**Mobile (<600px)**: Tabs become horizontally scrollable strip (`overflow-x: auto`). Cards go single-column.
 
 ### Theme Configuration: Data-Driven Mapping
 
@@ -86,7 +86,7 @@ Each card shows:
 - **Output**: Writes `static/heroes/{slug}.svg` per post
 - **Determinism**: Slug string hashed to seed a PRNG. Same slug always produces the same visual
 - **Pattern vocabulary**: Circles, lines, rectangles, arcs — geometric/minimal style using the site palette (`#6cb4ee` accent, `#c6a07a` warm accent, low opacity on `#0a0a0f` backgrounds)
-- **Size**: ~1-2KB per SVG, 16 files total
+- **Size**: ~1-2KB per SVG, one per content post
 - **CI integration**: Runs before `zola build` in both deploy and QA workflows. SVGs are **committed to the repo** (like glossary.md). QA pipeline verifies generated output matches committed files via `git diff --exit-code`. `static/heroes/` is checked in, not gitignored.
 
 #### SVG Animations: Layered CSS
