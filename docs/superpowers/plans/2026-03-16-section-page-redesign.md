@@ -51,7 +51,7 @@ Create `scripts/generate-hero-svgs.ts`:
  */
 
 import { readdirSync, statSync, writeFileSync, mkdirSync } from "fs";
-import { join, resolve } from "path";
+import { basename, dirname, join, resolve } from "path";
 
 // Site palette
 const ACCENT = "#6cb4ee";
@@ -73,8 +73,7 @@ function findMarkdownFiles(dir: string): string[] {
 }
 
 function extractSlug(filePath: string): string {
-  const parts = filePath.split("/");
-  return parts[parts.length - 2];
+  return basename(dirname(filePath));
 }
 
 /** Simple seeded PRNG (mulberry32) */
@@ -386,7 +385,7 @@ Replace the entire contents of `templates/section.html`:
           <p class="card-desc">{{ page.description | truncate(length=120) }}</p>
           {% endif %}
           <div class="card-meta">
-            <span class="card-reading-time">{{ page.reading_time }} min</span>
+            <span class="card-reading-time">{% if page.extra.reading_time %}{{ page.extra.reading_time }}{% else %}{{ page.reading_time }} min{% endif %}</span>
             {% if page.taxonomies.tags %}
             <span class="card-tags">
               {% for tag in page.taxonomies.tags | slice(end=3) %}
@@ -444,7 +443,7 @@ Replace the entire contents of `templates/section.html`:
           {% if page.description %}
           <div class="post-summary">{{ page.description }}</div>
           {% endif %}
-          <span class="post-reading-time">{{ page.reading_time }} min</span>
+          <span class="post-reading-time">{% if page.extra.reading_time %}{{ page.extra.reading_time }}{% else %}{{ page.reading_time }} min{% endif %}</span>
         </a>
       </li>
       {% endif %}

@@ -165,7 +165,8 @@ function switchTab(slug) {
     var tab = document.querySelector('.theme-tab[data-theme="' + hash + '"]');
     if (tab) switchTab(hash);
   }
-  document.querySelector('.theme-tabs').addEventListener('keydown', function(e) {
+  var themeTabs = document.querySelector('.theme-tabs');
+  if (themeTabs) themeTabs.addEventListener('keydown', function(e) {
     var tabs = Array.from(document.querySelectorAll('.theme-tab'));
     var idx = tabs.indexOf(document.activeElement);
     if (idx < 0) return;

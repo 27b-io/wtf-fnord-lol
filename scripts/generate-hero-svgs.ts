@@ -8,7 +8,7 @@
  */
 
 import { readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+import { basename, dirname, join, resolve } from 'path';
 
 // Site palette
 const ACCENT = '#6cb4ee';
@@ -30,8 +30,7 @@ function findMarkdownFiles(dir: string): string[] {
 }
 
 function extractSlug(filePath: string): string {
-  const parts = filePath.split('/');
-  return parts[parts.length - 2];
+  return basename(dirname(filePath));
 }
 
 /** Simple seeded PRNG (mulberry32) */
@@ -141,12 +140,11 @@ function main() {
   mkdirSync(outDir, { recursive: true });
 
   const files = findMarkdownFiles(contentDir);
-  console.log(`Scanning ${files.length} content files...`);
+  const slugs = new Set(files.map(extractSlug));
+  console.log(`Found ${slugs.size} unique slugs from ${files.length} content files...`);
 
   let count = 0;
-  for (const file of files) {
-    const slug = extractSlug(file);
-
+  for (const slug of slugs) {
     const seed = hashString(slug);
     const rng = seededRng(seed);
     const elements = generateElements(rng);
