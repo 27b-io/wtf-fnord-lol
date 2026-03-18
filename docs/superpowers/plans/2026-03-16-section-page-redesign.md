@@ -184,12 +184,11 @@ function main() {
   mkdirSync(outDir, { recursive: true });
 
   const files = findMarkdownFiles(contentDir);
-  console.log(`Scanning ${files.length} content files...`);
+  const slugs = new Set(files.map(extractSlug));
+  console.log(`Found ${slugs.size} unique slugs from ${files.length} content files...`);
 
   let count = 0;
-  for (const file of files) {
-    const slug = extractSlug(file);
-
+  for (const slug of slugs) {
     const seed = hashString(slug);
     const rng = seededRng(seed);
     const elements = generateElements(rng);
@@ -468,10 +467,25 @@ function switchTab(slug) {
 }
 (function() {
   var hash = location.hash.replace('#', '');
-  if (hash) {
+  if (hash && /^[A-Za-z0-9-]+$/.test(hash)) {
     var tab = document.querySelector('.theme-tab[data-theme="' + hash + '"]');
     if (tab) switchTab(hash);
   }
+  var themeTabs = document.querySelector('.theme-tabs');
+  if (themeTabs) themeTabs.addEventListener('keydown', function(e) {
+    var tabs = Array.from(document.querySelectorAll('.theme-tab'));
+    var idx = tabs.indexOf(document.activeElement);
+    if (idx < 0) return;
+    var next = -1;
+    if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    var slug = tabs[next].getAttribute('data-theme');
+    if (slug && /^[A-Za-z0-9-]+$/.test(slug)) switchTab(slug);
+  });
 })();
 </script>
 {% endblock %}
