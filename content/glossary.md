@@ -48,6 +48,12 @@ date = 2026-03-09
 <dt>contrastive objective</dt>
 <dd>A loss function that pushes positive (user, item) pairs closer in embedding space and negative pairs further apart. The model learns what 'relevant' means by seeing examples of both.</dd>
 
+<dt>CQRS</dt>
+<dd>Command Query Responsibility Segregation — separating the write path (commands) from the read path (queries), allowing each to be optimised independently.</dd>
+
+<dt>CRDT</dt>
+<dd>Conflict-free Replicated Data Type — a data structure designed so that concurrent updates on different replicas always merge deterministically without coordination, producing the same result regardless of order.</dd>
+
 <dt>cross-features</dt>
 <dd>Features that depend on both user and item together, like 'has this user listened to this creator before?'. The most powerful ranking signals, but require seeing both sides simultaneously.</dd>
 
@@ -99,6 +105,9 @@ date = 2026-03-09
 <dt>empathy-not-surveillance</dt>
 <dd>A design principle: the system should act on emotional inference without exposing it. The output should feel attuned, not monitored.</dd>
 
+<dt>eventual consistency</dt>
+<dd>A consistency model where replicas are allowed to temporarily disagree, but will converge to the same state given enough time without new writes.</dd>
+
 <dt>exploration slots</dt>
 <dd>Dedicated positions in a recommendation feed reserved for content outside a user's established preference profile, used to prevent filter bubble formation and discover new user interests.</dd>
 
@@ -120,6 +129,12 @@ date = 2026-03-09
 <dt>frees the underlying dataset</dt>
 <dd>Specifically, free_raw_data=True releases the Python-side raw data after Dataset construction. The internal LightGBM Dataset still exists, but any code that later needs the original raw data (e.g., setting references, modifying metadata, or reconstructing the Dataset) will silently get garbage.</dd>
 
+<dt>G-Counter</dt>
+<dd>A CRDT counter where each replica maintains its own local counter. The total is the sum across all replicas. Only supports increments — no decrements — making merges trivial.</dd>
+
+<dt>G-Set</dt>
+<dd>A CRDT set that only supports adding elements, never removing them. Merging two G-Sets is just set union — trivially conflict-free.</dd>
+
 <dt>generative recommendation</dt>
 <dd>Using LLMs to generate recommendations directly rather than scoring pre-computed candidate lists. Collapses the candidate retrieval + scoring pipeline but introduces latency and cost tradeoffs.</dd>
 
@@ -135,11 +150,17 @@ date = 2026-03-09
 <dt>habituate</dt>
 <dd>The psychological process by which repeated exposure to the same stimulus reduces response. In notification systems, sending the same message repeatedly causes users to ignore it — even if it was initially the most effective option.</dd>
 
+<dt>Hebbian learning</dt>
+<dd>'Neurons that fire together wire together.' In Ālaya's context: memories retrieved in the same search results get stronger edges between them, making future co-retrieval more likely.</dd>
+
 <dt>Histogram-based splitting</dt>
 <dd>Discretising continuous features into bins (256 by default) so finding the best split scans bins rather than sorting the full dataset. O(bins) instead of O(n·log(n)).</dd>
 
 <dt>hyperparameter tuning</dt>
 <dd>Systematically searching for the best model configuration (learning rate, tree depth, regularisation, etc.) using techniques like Bayesian optimisation or random search.</dd>
+
+<dt>idempotency</dt>
+<dd>The property where applying an operation multiple times produces the same result as applying it once — crucial for distributed systems where messages can be delivered more than once.</dd>
 
 <dt>In-batch negatives</dt>
 <dd>Using other users' positive items in the same training batch as negatives. Simple, free, surprisingly effective at batch sizes of 4096+.</dd>
@@ -167,6 +188,9 @@ date = 2026-03-09
 
 <dt>logged intentions</dt>
 <dd>Behavioral events that represent an intentional act being executed — a user consciously recording or marking an action as deliberate, rather than the system passively observing it.</dd>
+
+<dt>LWW-Register</dt>
+<dd>Last-Writer-Wins Register — a CRDT where each update carries a timestamp, and the value with the highest timestamp wins. Simple, effective, occasionally surprising when clocks disagree.</dd>
 
 <dt>mcp-memory-service</dt>
 <dd>An open-source MCP server providing persistent, semantically searchable memory with knowledge graph relationships, emotional analysis, salience scoring, and Hebbian learning. Used by AI agents for long-term memory.</dd>
@@ -278,6 +302,9 @@ date = 2026-03-09
 
 <dt>search suggestion chips</dt>
 <dd>UI elements that appear below the search bar showing related or suggested queries. In a personalized system, these can be pre-generated from the same expansion_terms structure — surfacing the expansion before the user even completes their query.</dd>
+
+<dt>SEC</dt>
+<dd>Strong Eventual Consistency — the guarantee provided by CRDTs: any two replicas that have processed the same set of updates will be in the same state, regardless of order. Stronger than eventual consistency (which only promises 'eventually'), weaker than strong consistency (which demands real-time agreement).</dd>
 
 <dt>semantic signals</dt>
 <dd>Signals derived from the meaning of content — embeddings, topic models, entity extraction. 'This document is about X.' Strength: handles cold start. Weakness: doesn't know what the user actually wants.</dd>
