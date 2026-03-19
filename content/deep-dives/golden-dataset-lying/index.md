@@ -15,7 +15,7 @@ series = ["deep-dives"]
 Hand-crafted user archetypes are fiction at scale — let K-Means on your actual data marts show you the clusters that exist, then use diversity-aware sampling to build eval sets that represent them.
 
 {% callout(type="tldr") %}
-**What:** We defined 12 user archetypes for a 38M-user product. Then we ran {{ glossary(term="K-Means clustering", def="An unsupervised algorithm that partitions n observations into k clusters by iteratively assigning points to the nearest centroid and recomputing centroids until convergence.") }} on BigQuery ML against actual behavioral data and discovered the real distribution looked nothing like our taxonomy.
+**What:** We defined 12 user archetypes for a 38M-user product. Then we ran {{ glossary(term="K-Means clustering", def="An unsupervised algorithm that partitions n observations into k clusters by iteratively assigning points to the nearest centroid and recomputing centroids until convergence.") }} on BigQuery ML against actual behavioural data and discovered the real distribution looked nothing like our taxonomy.
 
 **Why it matters:** Every downstream evaluation — A/B tests, model evals, prompt testing — inherits the biases of your test set. If your "representative sample" was built from personas someone invented in a product offsite, your evaluations are measuring fit to imagination, not fit to reality.
 
@@ -26,18 +26,18 @@ Hand-crafted user archetypes are fiction at scale — let K-Means on your actual
 
 Here's how it usually goes. Product team runs a research sprint. They interview 30 users, survey 500, maybe cluster some NPS responses. Out comes a poster with 12 personas: "Power User Priya," "Casual Carl," "Enterprise Eva." Marketing loves it. Design loves it. The ML team inherits it as ground truth for evaluation datasets.
 
-The problem isn't that personas are wrong. The problem is that personas are *aspirational*. They describe who you think your users are, filtered through who you want them to be. At 38M users, the actual behavioral distribution is weirder, lumpier, and more skewed than any whiteboard exercise produces.
+The problem isn't that personas are wrong. The problem is that personas are *aspirational*. They describe who you think your users are, filtered through who you want them to be. At 38M users, the actual behavioural distribution is weirder, lumpier, and more skewed than any whiteboard exercise produces.
 
 We found this out the hard way.
 
 ## What the Data Actually Said
 
-We had 12 hand-crafted archetypes. We had 38M users with behavioral features in BigQuery data marts — session frequency, feature usage patterns, content preferences, time-of-day distributions, retention curves. We ran K-Means on the actual data to see how many natural clusters existed and what they looked like.
+We had 12 hand-crafted archetypes. We had 38M users with behavioural features in BigQuery data marts — session frequency, feature usage patterns, content preferences, time-of-day distributions, retention curves. We ran K-Means on the actual data to see how many natural clusters existed and what they looked like.
 
 Here's the BigQuery ML query that started the conversation:
 
 ```sql
--- Step 1: Create a K-Means model on actual behavioral features
+-- Step 1: Create a K-Means model on actual behavioural features
 CREATE OR REPLACE MODEL `project.ml.user_segments_kmeans`
 OPTIONS (
   model_type = 'KMEANS',
@@ -59,7 +59,7 @@ SELECT
   d7_retention_flag,
   d30_retention_flag,
   revenue_lifetime_usd
-FROM `project.marts.user_behavioral_features`
+FROM `project.marts.user_behavioural_features`
 WHERE snapshot_date = CURRENT_DATE()
   AND sessions_per_week > 0;   -- Exclude true churns
 ```
@@ -98,7 +98,7 @@ The most dangerous archetype is the one that feels true but describes 0.2% of yo
 
 Here's where it gets expensive. If your evaluation dataset was sampled to "represent all 12 archetypes equally," you've massively over-weighted the rare ones and under-weighted the dominant patterns. Your model evaluations are optimizing for a user distribution that doesn't exist.
 
-Concretely: we had been testing personalization models against an eval set where "Power User" accounted for 8.3% of examples (1/12). In reality, power users — by any reasonable behavioral definition — were 1.8% of the active base. Our eval set was telling us models were great at serving power users and mediocre at serving casual users. The production metrics said the opposite.
+Concretely: we had been testing personalisation models against an eval set where "Power User" accounted for 8.3% of examples (1/12). In reality, power users — by any reasonable behavioural definition — were 1.8% of the active base. Our eval set was telling us models were great at serving power users and mediocre at serving casual users. The production metrics said the opposite.
 
 ## Diversity-Aware Sampling: The Fix
 
@@ -162,7 +162,7 @@ for cluster_id in range(17):
 
 Determinantal Point Processes give you a principled way to sample diverse subsets. The probability of selecting a subset is proportional to the determinant of its kernel matrix — similar items reduce the determinant, so diverse subsets are naturally preferred.
 
-DPPs show up everywhere you need "spread" — recommendation diversity, document summarization, active learning batch selection, and yes, evaluation sampling. The same mathematical framework that ensures diverse training batches for contrastive learning ensures diverse eval sets for model evaluation.
+{{ cite(key="kulesza2012", title="Determinantal Point Processes for Machine Learning", authors="Kulesza & Taskar", year="2012", url="https://arxiv.org/abs/1207.6083") }} is the foundational reference — it covers DPPs for recommendation diversity, document summarisation, and subset selection. The same mathematical framework that ensures diverse training batches for contrastive learning ensures diverse eval sets for model evaluation.
 
 ```python
 from dppy.finite_dpps import FiniteDPP
@@ -193,8 +193,8 @@ def dpp_sample(
 
 ## The Workflow
 
-1. **Cluster your actual users** — BQ ML K-Means on behavioral features from your data marts. Not surveys. Not interviews. Features derived from what users *did*.
-2. **Inspect cluster distributions** — If any cluster contains <1% of users, you probably have too many clusters (or a genuinely rare behavior worth isolating). If the top 3 clusters contain >70% of users, your product has a dominant usage pattern and your eval set should reflect that.
+1. **Cluster your actual users** — BQ ML K-Means on behavioural features from your data marts. Not surveys. Not interviews. Features derived from what users *did*.
+2. **Inspect cluster distributions** — If any cluster contains <1% of users, you probably have too many clusters (or a genuinely rare behaviour worth isolating). If the top 3 clusters contain >70% of users, your product has a dominant usage pattern and your eval set should reflect that.
 3. **Sample diversely within clusters** — Farthest-first or DPP, proportional to cluster size (or stratified if you deliberately want to over-represent minorities for fairness evaluation).
 4. **Label and version your eval set** — This is now a versioned artifact. When your user base shifts, re-cluster and re-sample. Treat eval sets like code: they have releases.
 
@@ -210,4 +210,4 @@ Your golden dataset was never golden. It was gilded. Strip the paint and look at
 
 **Read this if** you're building evaluation datasets for any ML system at scale and your test set was designed by humans in a room. Especially if your eval metrics look suspiciously good.
 
-**Skip this if** your product has <10K users (hand-crafted personas are fine at that scale) or your eval sets are already sampled from production behavioral data.
+**Skip this if** your product has <10K users (hand-crafted personas are fine at that scale) or your eval sets are already sampled from production behavioural data.

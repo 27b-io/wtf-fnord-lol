@@ -1,10 +1,10 @@
 +++
 title = "Three Loops Your LLM Pipeline Needs From Day One"
-description = "Zero-cost architectural decisions — a prompt registry, per-block model config, and three BigQuery columns — that cost nothing to add now and unlock DSPy optimization, LangSmith experiments, and behavioral flywheels later."
+description = "Zero-cost architectural decisions — a prompt registry, per-block model config, and three BigQuery columns — that cost nothing to add now and unlock DSPy optimisation, LangSmith experiments, and behavioural flywheels later."
 date = 2026-03-17T21:20:00+11:00
 
 [taxonomies]
-tags = ["llm-ops", "dspy", "langsmith", "optimization", "architecture", "bigquery"]
+tags = ["llm-ops", "dspy", "langsmith", "optimisation", "architecture", "bigquery"]
 series = ["deep-dives"]
 
 [extra]
@@ -12,40 +12,40 @@ series = ["deep-dives"]
 
 ## The One-Sentence Version
 
-Add three things to your LLM pipeline on day one — a prompt registry, per-block model config, and three behavioral columns in BigQuery — and you get DSPy prompt optimization, LangSmith model selection, and behavioral flywheels for free later.
+Add three things to your LLM pipeline on day one — a prompt registry, per-block model config, and three behavioural columns in BigQuery — and you get DSPy prompt optimisation, LangSmith model selection, and behavioural flywheels for free later.
 
 {% callout(type="tldr") %}
-**What:** Three feedback loops that most LLM pipelines need eventually but almost nobody builds from the start: (1) prompt optimization via {{ glossary(term="DSPy MIPROv2", def="An automated prompt optimizer from Stanford NLP that uses Bayesian surrogate models to search the space of prompt instructions, few-shot examples, and module compositions — treating prompt engineering as a hyperparameter optimization problem.") }}, (2) model selection experiments via {{ glossary(term="LangSmith", def="LangChain's observability and evaluation platform — traces LLM calls, runs dataset evaluations, and supports A/B experiments across models and prompt variants.") }}, and (3) behavioral flywheels from production data.
+**What:** Three feedback loops that most LLM pipelines need eventually but almost nobody builds from the start: (1) prompt optimisation via {{ glossary(term="DSPy MIPROv2", def="An automated prompt optimiser from Stanford NLP that uses Bayesian surrogate models to search the space of prompt instructions, few-shot examples, and module compositions — treating prompt engineering as a hyperparameter optimisation problem.") }}, (2) model selection experiments via {{ glossary(term="LangSmith", def="LangChain's observability and evaluation platform — traces LLM calls, runs dataset evaluations, and supports A/B experiments across models and prompt variants.") }}, and (3) behavioural flywheels from production data.
 
 **Why it matters:** Each loop requires specific architectural affordances — a prompt registry, per-block model routing, structured logging columns. Adding these later means refactoring your pipeline. Adding them now costs essentially zero additional engineering effort.
 
-**The trick:** You don't need to *use* any of these loops on day one. You just need to not *prevent* them. Three decisions made at pipeline construction time determine whether optimization is a config change or a rewrite six months later.
+**The trick:** You don't need to *use* any of these loops on day one. You just need to not *prevent* them. Three decisions made at pipeline construction time determine whether optimisation is a config change or a rewrite six months later.
 {% end %}
 
-## The Problem With "We'll Optimize Later"
+## The Problem With "We'll Optimise Later"
 
-Every LLM pipeline starts the same way. You hardcode a prompt, pick a model (GPT-4, probably), wire it to your application, ship it. It works. Costs are low because traffic is low. Nobody's thinking about optimization because there's nothing to optimize yet.
+Every LLM pipeline starts the same way. You hardcode a prompt, pick a model (GPT-4, probably), wire it to your application, ship it. It works. Costs are low because traffic is low. Nobody's thinking about optimisation because there's nothing to optimise yet.
 
 Six months later, traffic is 50x, your OpenAI bill is a line item that finance asks about, and you want to:
 - Try cheaper models for some tasks
-- Optimize your prompts systematically instead of vibes-based editing
-- Use production behavioral data to improve outputs
+- Optimise your prompts systematically instead of vibes-based editing
+- Use production behavioural data to improve outputs
 
-And you discover that doing any of this requires rewriting your pipeline, because every optimization loop needs a hook that doesn't exist.
+And you discover that doing any of this requires rewriting your pipeline, because every optimisation loop needs a hook that doesn't exist.
 
 Here are the three hooks. Each costs approximately zero to add now.
 
-## Loop 1: Prompt Optimization (DSPy MIPROv2)
+## Loop 1: Prompt Optimisation (DSPy MIPROv2)
 
 ### What It Does
 
-{{ cite(key="opsahlong2024", title="Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs", authors="Opsahl-Ong et al.", year="2024", url="https://arxiv.org/abs/2406.11695") }} introduced MIPROv2 — an optimizer that treats prompt engineering as a {{ glossary(term="hyperparameter optimization", def="Systematically searching a configuration space (here: prompt instructions and few-shot examples) using techniques like Bayesian optimization rather than manual trial-and-error.") }} problem. You define a task metric, give it your pipeline, and it searches the space of instructions and few-shot examples using Bayesian surrogate models.
+{{ cite(key="opsahlong2024", title="Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs", authors="Opsahl-Ong et al.", year="2024", url="https://arxiv.org/abs/2406.11695") }} introduced MIPROv2 — an optimiser that treats prompt engineering as a {{ glossary(term="hyperparameter optimisation", def="Systematically searching a configuration space (here: prompt instructions and few-shot examples) using techniques like Bayesian optimisation rather than manual trial-and-error.") }} problem. You define a task metric, give it your pipeline, and it searches the space of instructions and few-shot examples using Bayesian surrogate models.
 
 It works. On DSPy benchmarks, MIPROv2 consistently outperforms hand-tuned prompts by 5-15% on task metrics. Not because it's smarter than you — because it can try 200 prompt variants in the time you try 3.
 
 ### The Architectural Requirement
 
-MIPROv2 needs one thing: **prompts that are addressable and swappable without code changes.** If your prompt is a string literal inside a function, DSPy can't optimize it without modifying your source code. If your prompt is a named entry in a registry, DSPy can swap variants while your pipeline runs unchanged.
+MIPROv2 needs one thing: **prompts that are addressable and swappable without code changes.** If your prompt is a string literal inside a function, DSPy can't optimise it without modifying your source code. If your prompt is a named entry in a registry, DSPy can swap variants while your pipeline runs unchanged.
 
 ### The Zero-Cost Decision: A Prompt Registry
 
@@ -112,7 +112,7 @@ That's it. Same functionality, ~20 extra lines. But now:
 The prompt registry isn't about DSPy specifically. It's about making prompts a **configuration surface** instead of embedded code. DSPy, manual A/B testing, regulatory audit trails — they all need the same thing: prompts that are named, versioned, and swappable.
 {% end %}
 
-### What MIPROv2 Optimization Looks Like (When You're Ready)
+### What MIPROv2 Optimisation Looks Like (When You're Ready)
 
 ```python
 import dspy
@@ -131,18 +131,18 @@ def quality_metric(example, prediction, trace=None):
     # ... score the summary against the reference
     return score
 
-# Run MIPROv2 optimization
+# Run MIPROv2 optimisation
 from dspy.teleprompt import MIPROv2
 
-optimizer = MIPROv2(
+optimiser = MIPROv2(
     metric=quality_metric,
     num_candidates=30,      # Prompt variants to generate
-    num_trials=200,         # Bayesian optimization trials
+    num_trials=200,         # Bayesian optimisation trials
     max_bootstrapped_demos=4,  # Few-shot examples per prompt
     max_labeled_demos=8,
 )
 
-optimized = optimizer.compile(
+optimized = optimiser.compile(
     Summarizer(),
     trainset=training_examples,
     eval_kwargs={"num_threads": 8}
@@ -160,7 +160,7 @@ You don't need this on day one. You need the registry on day one so this works o
 
 LangSmith experiments let you run the same dataset through different model configurations and compare results side by side. Same inputs, same evaluation criteria, different models. The output is a comparison table showing quality, latency, and cost per model.
 
-This matters because model selection is the highest-leverage cost optimization in most LLM pipelines. The difference between GPT-4 and GPT-3.5-turbo is 20-30x on cost. The quality difference is task-dependent and often smaller than people assume.
+This matters because model selection is the highest-leverage cost optimisation in most LLM pipelines. The difference between GPT-4 and GPT-3.5-turbo is 20-30x on cost. The quality difference is task-dependent and often smaller than people assume.
 
 ### The Architectural Requirement
 
@@ -249,15 +249,15 @@ results = evaluate(
 **When should you actually run these experiments?** When your LLM spend crosses a threshold that someone asks about — usually $5-10K/month. Before that, use GPT-4 everywhere and focus on product-market fit. The per-block config costs you nothing now and saves you a pipeline rewrite when finance comes knocking.
 {% end %}
 
-## Loop 3: Behavioral Flywheels (Three BQ Columns)
+## Loop 3: Behavioural Flywheels (Three BQ Columns)
 
 ### What It Does
 
-A behavioral flywheel uses production user behavior to improve your pipeline outputs. User clicks on recommendation A instead of B → that signal feeds back into your system to generate better recommendations. The pipeline gets smarter from usage without explicit training.
+A behavioural flywheel uses production user behavior to improve your pipeline outputs. User clicks on recommendation A instead of B → that signal feeds back into your system to generate better recommendations. The pipeline gets smarter from usage without explicit training.
 
 ### The Architectural Requirement
 
-You need **structured behavioral signals in your data warehouse, joined to pipeline outputs.** This means logging three things alongside every LLM-generated output:
+You need **structured behavioural signals in your data warehouse, joined to pipeline outputs.** This means logging three things alongside every LLM-generated output:
 
 1. **What was generated** (output ID, content hash)
 2. **What the user did** (engagement signal)  
@@ -333,15 +333,15 @@ The flywheel loop is the most valuable of the three and the easiest to add. Thre
 
 Each loop is useful alone. Together they compound:
 
-1. **Behavioral flywheel** tells you which prompt versions users prefer → feeds into...
-2. **DSPy MIPROv2** which optimizes prompts using behavioral CTR as its metric → produces new prompt variants tested via...
+1. **Behavioural flywheel** tells you which prompt versions users prefer → feeds into...
+2. **DSPy MIPROv2** which optimises prompts using behavioural CTR as its metric → produces new prompt variants tested via...
 3. **LangSmith experiments** which determine which model is cheapest for each optimized prompt while maintaining quality → results logged with...
-4. **Behavioral flywheel** columns that measure whether the cheaper model + optimized prompt actually performs in production.
+4. **Behavioural flywheel** columns that measure whether the cheaper model + optimized prompt actually performs in production.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
-│   BQ Behavioral Data ──→ DSPy Metric Function           │
+│   BQ Behavioural Data ──→ DSPy Metric Function           │
 │         │                        │                      │
 │         │                   Optimized Prompts            │
 │         │                        │                      │
@@ -366,7 +366,7 @@ Before you ship your next LLM pipeline, check these boxes:
 - [ ] **Each pipeline block has its own model config.** Changing one block's model doesn't require changing any other block.
 - [ ] **LLM outputs are logged with `user_action`, `action_delay_ms`, and `alternatives_shown`** (or your domain-specific equivalents).
 
-That's it. Three decisions. Zero additional infrastructure cost. Zero performance overhead. And when you need optimization loops — and you will — they're a configuration change instead of a rewrite.
+That's it. Three decisions. Zero additional infrastructure cost. Zero performance overhead. And when you need optimisation loops — and you will — they're a configuration change instead of a rewrite.
 
 Build the hooks. Use them when you're ready. The worst case is you added 50 lines of config management you never used. The expected case is you saved yourself a month of refactoring when your bill crosses $10K/month and someone asks "can we make this cheaper?"
 
@@ -374,6 +374,6 @@ The answer should be "yes, let me change a config file," not "yes, let me rewrit
 
 ## Bottom Line
 
-**Read this if** you're about to build or are early in building an LLM pipeline and want to avoid the "optimization requires rewrite" trap. The three decisions described here cost zero engineering effort to add now.
+**Read this if** you're about to build or are early in building an LLM pipeline and want to avoid the "optimisation requires rewrite" trap. The three decisions described here cost zero engineering effort to add now.
 
-**Skip this if** your pipeline is already in production with proper prompt versioning, per-block model routing, and behavioral logging. You've already made these decisions — this article won't tell you anything new.
+**Skip this if** your pipeline is already in production with proper prompt versioning, per-block model routing, and behavioural logging. You've already made these decisions — this article won't tell you anything new.
