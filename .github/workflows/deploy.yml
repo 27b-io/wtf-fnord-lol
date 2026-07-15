@@ -47,7 +47,12 @@ jobs:
 
       - name: Verify generated heroes are committed
         run: |
-          git diff --exit-code static/heroes/ || (echo "ERROR: Generated hero SVGs differ from committed versions. Run 'npx tsx scripts/generate-hero-svgs.ts' and commit the results." && exit 1)
+          # git status --porcelain also catches untracked (new) and deleted (pruned) SVGs, which git diff misses
+          if [ -n "$(git status --porcelain -- static/heroes/)" ]; then
+            git status --porcelain -- static/heroes/
+            echo "ERROR: Generated hero SVGs differ from committed versions. Run 'npx tsx scripts/generate-hero-svgs.ts' and commit the results."
+            exit 1
+          fi
 
       - name: Build
         run: zola build

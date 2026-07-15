@@ -86,7 +86,7 @@ Direct signals are also the only ones that can express *negative* preferences cl
 
 {{ glossary(term="Park et al.", def="Reference to 'Generative Agents: Interactive Simulacra of Human Behavior' (Park et al., 2023), which introduced a memory scoring formula for AI agents: score = α_recency × recency + α_importance × importance + α_relevance × relevance. The foundational work that most agent memory systems extend.") }} introduced the canonical memory scoring formula for AI agents:
 
-```
+```text
 score = α_recency × recency + α_importance × importance + α_relevance × relevance
 ```
 

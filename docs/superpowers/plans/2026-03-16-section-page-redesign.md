@@ -212,7 +212,7 @@ Run: `npx prettier --write scripts/generate-hero-svgs.ts`
 - [ ] **Step 3: Run the script and verify output**
 
 Run: `npx tsx scripts/generate-hero-svgs.ts`
-Expected: `Scanning 17 content files...` / `Generated 17 hero SVGs to .../static/heroes`
+Expected: `Found <N> unique slugs from <M> content files...` / `Generated <N> hero SVGs to .../static/heroes`
 
 Verify: `ls static/heroes/ | head -5` — should see `{slug}.svg` files.
 

@@ -34,7 +34,7 @@ The comparison table earns its place — side-by-side numbers beat prose, and th
 
 ### What fails
 
-1. **"The Bigger Picture" is structural dead weight.** It restates the thesis a third time ("AI infrastructure is moving toward edge-native... the systems that win will be the ones that match their consistency model to their data model"). The reader has heard this in the TL;DR, in the "Why Memory Systems Aren't Databases" insight callout, and now here again. Three declarations of the same point is two too many. Cut this section or merge its one new idea (latency budget of streaming responses) into the preceding section.
+1. **"The Bigger Picture" is structural dead weight.** It restates the thesis a third time ("AI infrastructure is moving toward edge-native... the systems that win will be the ones that match their consistency model to their data model"). The reader has heard this in the TL;DR, in the "Why Memory Systems Aren't Databases" insight callout, and now here again. Three declarations of the same point are two too many. Cut this section or merge its one new idea (latency budget of streaming responses) into the preceding section.
 
 2. **"CQRS: Already Doing It" doesn't earn its section break.** The Automerge comparison at the end ("Automerge solves the much harder problem...") is a comparison that diminishes rather than illuminates — it tells me Ālaya is simpler, which I already know. The CQRS framing adds jargon (yet another acronym) for a point that could be one paragraph in the "Accidentally CRDT-Shaped" section: "The async write queue is already a command channel. Extending it across clusters means shipping the command log."
 

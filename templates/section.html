@@ -70,7 +70,9 @@
 
       {% if is_best %}
       <a href="{{ page.permalink }}" class="post-card">
-        <img src="/heroes/{{ page.slug }}.svg" alt="" class="card-svg" loading="lazy"/>
+        {# Inline the SVG so page-level ambient/hover animation CSS can reach its elements #}
+        {% set hero_svg = load_data(path="static/heroes/" ~ page.slug ~ ".svg", format="plain", required=false) %}
+        {% if hero_svg %}<div class="card-svg">{{ hero_svg | safe }}</div>{% endif %}
         <div class="card-body">
           <h3 class="card-title">{{ page.title }}</h3>
           {% if page.description %}

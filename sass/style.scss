@@ -1056,7 +1056,13 @@ article {
   width: 100%;
   height: 100px;
   display: block;
-  object-fit: cover;
+
+  // Inline SVG; preserveAspectRatio="xMidYMid slice" on the root does the object-fit: cover crop
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 }
 
 .card-body {

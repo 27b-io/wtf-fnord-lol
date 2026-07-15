@@ -7,7 +7,7 @@
  * Usage: npx tsx scripts/generate-hero-svgs.ts
  */
 
-import { readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
+import { readdirSync, statSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
 import { basename, dirname, join, resolve } from 'path';
 
 // Site palette
@@ -126,7 +126,8 @@ function buildSvg(elements: SvgElement[]): string {
   const ambientParts = elements.map((e) => e.ambient).filter(Boolean);
   const hoverParts = elements.map((e) => e.hover).filter(Boolean);
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120">
+  // Inlined into section.html, so: slice ≈ object-fit: cover; aria-hidden = decorative
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
 <rect width="300" height="120" fill="${BG}"/>
 ${ambientParts.join('\n')}
 ${hoverParts.join('\n')}
@@ -156,6 +157,16 @@ function main() {
   }
 
   console.log(`Generated ${count} hero SVGs to ${outDir}`);
+
+  // Prune stale SVGs whose post no longer exists, so the committed set matches the slug set
+  let pruned = 0;
+  for (const entry of readdirSync(outDir)) {
+    if (entry.endsWith('.svg') && !slugs.has(entry.slice(0, -'.svg'.length))) {
+      unlinkSync(join(outDir, entry));
+      pruned++;
+    }
+  }
+  if (pruned > 0) console.log(`Pruned ${pruned} stale hero SVGs`);
 }
 
 main();

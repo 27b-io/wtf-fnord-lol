@@ -52,7 +52,7 @@ date = 2026-03-09
 <dd>Command Query Responsibility Segregation — separating the write path (commands) from the read path (queries), allowing each to be optimised independently.</dd>
 
 <dt>CRDT</dt>
-<dd>Conflict-free Replicated Data Type — a data structure designed so that concurrent updates on different replicas always merge deterministically without coordination, producing the same result regardless of order.</dd>
+<dd>Conflict-free Replicated Data Type — a data structure designed so that replicas which have processed the same updates converge to the same state without coordination, subject to the type's delivery and operation-model assumptions.</dd>
 
 <dt>cross-features</dt>
 <dd>Features that depend on both user and item together, like 'has this user listened to this creator before?'. The most powerful ranking signals, but require seeing both sides simultaneously.</dd>
@@ -304,7 +304,7 @@ date = 2026-03-09
 <dd>UI elements that appear below the search bar showing related or suggested queries. In a personalized system, these can be pre-generated from the same expansion_terms structure — surfacing the expansion before the user even completes their query.</dd>
 
 <dt>SEC</dt>
-<dd>Strong Eventual Consistency — the guarantee provided by CRDTs: any two replicas that have processed the same set of updates will be in the same state, regardless of order. Stronger than eventual consistency (which only promises 'eventually'), weaker than strong consistency (which demands real-time agreement).</dd>
+<dd>Strong Eventual Consistency — the strong convergence guarantee of CRDTs: any two replicas that have delivered the same set of updates are in the same state, regardless of order. Stronger than eventual consistency (which only promises 'eventually'), weaker than strong consistency — it implies no real-time agreement, and it holds only under the type's delivery assumptions.</dd>
 
 <dt>semantic signals</dt>
 <dd>Signals derived from the meaning of content — embeddings, topic models, entity extraction. 'This document is about X.' Strength: handles cold start. Weakness: doesn't know what the user actually wants.</dd>
