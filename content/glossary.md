@@ -78,6 +78,12 @@ date = 2026-03-09
 <dt>downstream consumer</dt>
 <dd>Any system that reads and acts on part of an LLM's output. In the multi-artifact pattern, multiple downstream consumers each depend on different artifacts of the same response.</dd>
 
+<dt>DPP</dt>
+<dd>Determinantal Point Process — a probabilistic model over subsets that assigns higher probability to diverse subsets, used for sampling items that are spread across a feature space rather than clumped together.</dd>
+
+<dt>DSPy MIPROv2</dt>
+<dd>An automated prompt optimiser from Stanford NLP that uses Bayesian surrogate models to search the space of prompt instructions, few-shot examples, and module compositions — treating prompt engineering as a hyperparameter optimisation problem.</dd>
+
 <dt>Ebbinghaus forgetting curve</dt>
 <dd>Hermann Ebbinghaus's 1885 finding that memory retention decays exponentially over time. Duolingo applies this to notification fatigue: the 'memory' of having seen a template fades with a ~15-day half-life.</dd>
 
@@ -138,6 +144,9 @@ date = 2026-03-09
 <dt>Histogram-based splitting</dt>
 <dd>Discretising continuous features into bins (256 by default) so finding the best split scans bins rather than sorting the full dataset. O(bins) instead of O(n·log(n)).</dd>
 
+<dt>hyperparameter optimisation</dt>
+<dd>Systematically searching a configuration space (here: prompt instructions and few-shot examples) using techniques like Bayesian optimisation rather than manual trial-and-error.</dd>
+
 <dt>hyperparameter tuning</dt>
 <dd>Systematically searching for the best model configuration (learning rate, tree depth, regularisation, etc.) using techniques like Bayesian optimisation or random search.</dd>
 
@@ -146,6 +155,9 @@ date = 2026-03-09
 
 <dt>intention-action gap</dt>
 <dd>The measurable divergence between what a user states they intend to do and what behavioral data shows they actually did. Can be positive (exceeded intentions) or negative (fell short). Direction and magnitude both carry signal.</dd>
+
+<dt>K-Means clustering</dt>
+<dd>An unsupervised algorithm that partitions n observations into k clusters by iteratively assigning points to the nearest centroid and recomputing centroids until convergence.</dd>
 
 <dt>KL Divergence</dt>
 <dd>Measure of how much one probability distribution differs from another. Used as a penalty to stop RL-trained models from drifting too far from their original behavior.</dd>
