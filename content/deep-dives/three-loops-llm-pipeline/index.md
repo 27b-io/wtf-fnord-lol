@@ -67,6 +67,8 @@ def summarize(text: str) -> str:
 # Do this instead:
 from dataclasses import dataclass, field
 
+import yaml
+
 @dataclass
 class PromptConfig:
     name: str
@@ -75,18 +77,27 @@ class PromptConfig:
     template: str
     few_shot_examples: list[dict] = field(default_factory=list)
 
-# Prompt registry — can be YAML, DB, whatever.
-# The point is: prompts are data, not code.
-PROMPTS: dict[str, PromptConfig] = {
-    "summarize_v1": PromptConfig(
-        name="summarize",
-        version="v1",
-        system="You are a helpful assistant that summarizes text concisely.",
-        template="{text}",
-        few_shot_examples=[]
-    ),
-}
+# Prompt registry — loaded from data, not embedded in code. YAML here;
+# a DB table or config service works the same. If this were a Python
+# constant, every prompt edit would still be a code change + redeploy.
+def load_prompts(path: str = "prompts.yaml") -> dict[str, PromptConfig]:
+    with open(path) as f:
+        return {key: PromptConfig(**cfg) for key, cfg in yaml.safe_load(f).items()}
 
+PROMPTS: dict[str, PromptConfig] = load_prompts()
+```
+
+```yaml
+# prompts.yaml
+summarize_v1:
+  name: summarize
+  version: v1
+  system: You are a helpful assistant that summarizes text concisely.
+  template: "{text}"
+  few_shot_examples: []
+```
+
+```python
 def summarize(text: str, prompt_key: str = "summarize_v1") -> str:
     prompt = PROMPTS[prompt_key]
     messages = [{"role": "system", "content": prompt.system}]
@@ -218,30 +229,41 @@ def run_block(block_name: str, input_text: str) -> str:
 Now running a LangSmith experiment to test whether `generate_summary` works with `gpt-3.5-turbo` is a config change:
 
 ```python
+from dataclasses import replace
+
 from langsmith import Client
 from langsmith.evaluation import evaluate
 
 ls_client = Client()
 
-def run_pipeline_with_config(inputs: dict, config: dict) -> dict:
-    """Wrapper that lets LangSmith swap model configs per experiment."""
-    override = config.get("model_overrides", {})
-    # Temporarily override specific blocks
-    for block_name, model in override.items():
-        PIPELINE_CONFIG[block_name].model = model
+def make_pipeline_target(model_overrides: dict[str, str]):
+    """Build a per-experiment target with its own config copy.
 
-    result = run_full_pipeline(inputs["text"])
-    return {"output": result}
+    Two traps this avoids:
+    - evaluate(metadata=...) only annotates the experiment — it is never
+      forwarded to the target, so overrides passed that way silently no-op.
+    - Mutating the global PIPELINE_CONFIG leaks the override into later or
+      concurrent experiments, even with a finally-restore.
+    """
+    config = {
+        name: replace(block, model=model_overrides.get(name, block.model))
+        for name, block in PIPELINE_CONFIG.items()
+    }
+
+    def target(inputs: dict) -> dict:
+        return {"output": run_full_pipeline(inputs["text"], config=config)}
+
+    return target
 
 # Run experiment: can generate_summary use gpt-3.5-turbo?
+overrides = {"generate_summary": "gpt-3.5-turbo"}
 results = evaluate(
-    run_pipeline_with_config,
+    make_pipeline_target(overrides),
     data="summarization-eval-set",
     evaluators=[quality_evaluator, cost_evaluator],
     experiment_prefix="summary-model-swap",
-    metadata={
-        "model_overrides": {"generate_summary": "gpt-3.5-turbo"}
-    }
+    # Annotation only — the closure above does the actual swap
+    metadata={"model_overrides": overrides},
 )
 ```
 
@@ -316,9 +338,13 @@ SELECT
   alternatives_shown,
   COUNTIF(user_action = 'clicked') / COUNT(*) AS ctr,
   -- If CTR is flat across alternatives_shown,
-  -- users are engaging with content quality, not position
-  COUNTIF(user_action = 'clicked' AND position = 1) /
-    COUNTIF(user_action = 'clicked') AS first_position_share
+  -- users are engaging with content quality, not position.
+  -- SAFE_DIVIDE: a group with zero clicks returns NULL instead of
+  -- failing the whole report with a division-by-zero error.
+  SAFE_DIVIDE(
+    COUNTIF(user_action = 'clicked' AND position = 1),
+    COUNTIF(user_action = 'clicked')
+  ) AS first_position_share
 FROM `project.logs.llm_outputs`
 WHERE DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
 GROUP BY alternatives_shown
@@ -338,7 +364,7 @@ Each loop is useful alone. Together they compound:
 3. **LangSmith experiments** which determine which model is cheapest for each optimized prompt while maintaining quality → results logged with...
 4. **Behavioural flywheel** columns that measure whether the cheaper model + optimized prompt actually performs in production.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
 │   BQ Behavioural Data ──→ DSPy Metric Function           │

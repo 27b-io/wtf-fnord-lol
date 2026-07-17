@@ -19,7 +19,7 @@ Hand-crafted user archetypes are fiction at scale — let K-Means on your actual
 
 **Why it matters:** Every downstream evaluation — A/B tests, model evals, prompt testing — inherits the biases of your test set. If your "representative sample" was built from personas someone invented in a product offsite, your evaluations are measuring fit to imagination, not fit to reality.
 
-**The fix:** Data-driven clustering to discover real segments, then {{ glossary(term="DPP", def="Determinantal Point Process — a probabilistic model over subsets that assigns higher probability to diverse subsets, used for sampling items that are spread across a feature space rather than clumped together.") }} or farthest-first traversal to sample from them with guaranteed diversity.
+**The fix:** Data-driven clustering to discover real segments, then {{ glossary(term="DPP", def="Determinantal Point Process — a probabilistic model over subsets that assigns higher probability to diverse subsets, used for sampling items that are spread across a feature space rather than clumped together.") }} or farthest-first traversal to sample from them in a way that actively promotes diversity.
 {% end %}
 
 ## The Archetype Trap
@@ -48,7 +48,10 @@ OPTIONS (
   distance_type = 'EUCLIDEAN'
 ) AS
 SELECT
-  user_id,
+  -- user_id deliberately excluded: BQ ML would encode it as a feature
+  -- (one-hot if STRING), training the model on identity, not behaviour.
+  -- Map users to clusters afterwards via ML.PREDICT — non-feature columns
+  -- in the input pass through to the output.
   sessions_per_week,
   avg_session_duration_sec,
   distinct_features_used_28d,
@@ -106,7 +109,7 @@ Once you have real clusters, you need an eval set that represents them faithfull
 
 ### Farthest-First Traversal (Simple, Effective)
 
-Pick a seed point. Then iteratively pick the point farthest from all already-selected points. You get a sample that's maximally spread across your feature space.
+Pick a seed point. Then iteratively pick the point farthest from all already-selected points. You get a sample that's spread widely across your feature space — it's a greedy heuristic (a 2-approximation to the optimal k-center cover), not a guarantee of optimal spread.
 
 ```python
 import numpy as np
@@ -119,12 +122,18 @@ def farthest_first_traversal(
 ) -> list[int]:
     """
     Select k points from embeddings using farthest-first traversal.
-    Guarantees maximal spread across the feature space.
+    Greedily maximises spread across the feature space — a 2-approximation
+    to the optimal k-center cover, not a global optimum.
 
     O(k * n) — fine for eval set construction, don't use for tens of millions of rows.
     Run on cluster centroids or pre-sampled subsets.
     """
     n = embeddings.shape[0]
+    if not 1 <= k <= n:
+        raise ValueError(f"need 1 <= k <= n, got k={k}, n={n}")
+    if not 0 <= seed_idx < n:
+        raise ValueError(f"need 0 <= seed_idx < n, got seed_idx={seed_idx}")
+
     selected = [seed_idx]
     # min_distances[i] = distance from point i to nearest selected point
     min_distances = np.full(n, np.inf)
@@ -145,15 +154,22 @@ def farthest_first_traversal(
 
     return selected
 
-# Usage: sample 500 diverse users from each cluster
+# Usage: allocate the eval budget proportionally to cluster size,
+# then sample diversely *within* each cluster. A flat k per cluster
+# would recreate the equal-persona weighting this article criticises.
+EVAL_BUDGET = 10_000
+total_users = len(cluster_assignments)
 cluster_eval_sets = {}
-for cluster_id in range(17):
+# Iterate the actual IDs — BigQuery ML centroid_id values are 1-based,
+# so range(17) would process an empty cluster 0 and skip cluster 17.
+for cluster_id in np.unique(cluster_assignments):
     mask = cluster_assignments == cluster_id
     cluster_embeddings = user_embeddings[mask]
-    if len(cluster_embeddings) < 500:
+    quota = max(1, round(EVAL_BUDGET * mask.sum() / total_users))
+    if len(cluster_embeddings) <= quota:
         cluster_eval_sets[cluster_id] = np.where(mask)[0].tolist()
     else:
-        local_indices = farthest_first_traversal(cluster_embeddings, k=500)
+        local_indices = farthest_first_traversal(cluster_embeddings, k=quota)
         global_indices = np.where(mask)[0][local_indices]
         cluster_eval_sets[cluster_id] = global_indices.tolist()
 ```
@@ -171,20 +187,38 @@ from sklearn.metrics.pairwise import rbf_kernel
 def dpp_sample(
     embeddings: np.ndarray,
     k: int,
-    gamma: float = 1.0
+    gamma: float = 1.0,
+    max_pool: int = 5_000,
+    rng: np.random.Generator | None = None,
 ) -> list[int]:
     """
     Sample k diverse points using a DPP with RBF kernel.
     More expensive than farthest-first but statistically principled —
     samples are drawn from a proper probability distribution over
     diverse subsets, not a greedy heuristic.
+
+    The RBF kernel is a dense n x n matrix and exact k-DPP sampling is
+    cubic in n — running this on a raw multi-million-user cluster will
+    exhaust memory long before sampling finishes. Anything larger than
+    max_pool is first cut down to a uniform random coreset.
     """
+    n = embeddings.shape[0]
+    if not 1 <= k <= min(n, max_pool):
+        raise ValueError(f"need 1 <= k <= min(n, max_pool), got k={k}, n={n}, max_pool={max_pool}")
+
+    pool = np.arange(n)
+    if n > max_pool:
+        rng = rng or np.random.default_rng(42)
+        pool = rng.choice(n, size=max_pool, replace=False)
+        embeddings = embeddings[pool]
+
     # RBF kernel: K_ij = exp(-gamma * ||x_i - x_j||^2)
     L = rbf_kernel(embeddings, gamma=gamma)
     dpp = FiniteDPP(kernel_type='likelihood', L=L)
     # k-DPP: sample exactly k items
     dpp.sample_exact_k_dpp(size=k)
-    return dpp.list_of_samples[-1]
+    # Map pool-local indices back to the caller's index space
+    return pool[dpp.list_of_samples[-1]].tolist()
 ```
 
 {% callout(type="question") %}
