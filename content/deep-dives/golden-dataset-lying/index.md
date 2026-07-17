@@ -157,21 +157,33 @@ def farthest_first_traversal(
 # Usage: allocate the eval budget proportionally to cluster size,
 # then sample diversely *within* each cluster. A flat k per cluster
 # would recreate the equal-persona weighting this article criticises.
+# Largest-remainder allocation makes the quotas sum *exactly* to the
+# budget — rounding each cluster's share independently drifts over or
+# under it. NB: cluster IDs come from np.unique, not range(k) —
+# BigQuery ML centroid_id values are 1-based, so range(17) would
+# process an empty cluster 0 and skip cluster 17.
 EVAL_BUDGET = 10_000
-total_users = len(cluster_assignments)
+cluster_ids, cluster_sizes = np.unique(cluster_assignments, return_counts=True)
+shares = EVAL_BUDGET * cluster_sizes / cluster_sizes.sum()
+quotas = np.floor(shares).astype(int)
+# Hand the leftover seats to the largest fractional remainders
+leftover = np.argsort(shares - quotas)[::-1]
+quotas[leftover[: EVAL_BUDGET - quotas.sum()]] += 1
+
 cluster_eval_sets = {}
-# Iterate the actual IDs — BigQuery ML centroid_id values are 1-based,
-# so range(17) would process an empty cluster 0 and skip cluster 17.
-for cluster_id in np.unique(cluster_assignments):
+for cluster_id, quota in zip(cluster_ids, quotas):
     mask = cluster_assignments == cluster_id
-    cluster_embeddings = user_embeddings[mask]
-    quota = max(1, round(EVAL_BUDGET * mask.sum() / total_users))
-    if len(cluster_embeddings) <= quota:
-        cluster_eval_sets[cluster_id] = np.where(mask)[0].tolist()
-    else:
-        local_indices = farthest_first_traversal(cluster_embeddings, k=quota)
-        global_indices = np.where(mask)[0][local_indices]
+    global_indices = np.where(mask)[0]
+    quota = min(int(quota), len(global_indices))  # cap by cluster size
+    if quota == 0:
+        # A microscopic cluster can miss out entirely — bump the budget
+        # or stratify (workflow step 3) if rare behaviours must be seen.
+        cluster_eval_sets[cluster_id] = []
+    elif quota == len(global_indices):
         cluster_eval_sets[cluster_id] = global_indices.tolist()
+    else:
+        local_indices = farthest_first_traversal(user_embeddings[mask], k=quota)
+        cluster_eval_sets[cluster_id] = global_indices[local_indices].tolist()
 ```
 
 ### DPP Sampling (Statistically Principled)
