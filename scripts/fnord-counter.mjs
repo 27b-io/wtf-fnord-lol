@@ -14,13 +14,25 @@ export function countFnords(dir) {
 
 // Returns the top-N files by fnord count.
 export function topFnordFiles(counts, n) {
-  const limit = parseInt(process.env.FNORD_LIMIT);
+  let limit = n;
+  if (process.env.FNORD_LIMIT) {
+    const parsed = parseInt(process.env.FNORD_LIMIT, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      limit = parsed;
+    }
+  }
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, limit || n);
+    .slice(0, limit);
 }
 
-const dir = process.argv[2];
-const counts = countFnords(dir);
-const total = Object.values(counts).reduce((a, b) => a + b);
-console.log(`total fnords: ${total}`);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const dir = process.argv[2];
+  if (!dir) {
+    console.error('Usage: fnord-counter.mjs <directory>');
+    process.exit(1);
+  }
+  const counts = countFnords(dir);
+  const total = Object.values(counts).reduce((a, b) => a + b);
+  console.log(`total fnords: ${total}`);
+}
