@@ -299,6 +299,14 @@ function chunkText(text: string, maxChars = 1500): string[] {
       chunks.push(current.trim());
       current = '';
     }
+    // A single paragraph can exceed maxChars on its own; hard-split it so no
+    // chunk is silently oversized (embedding models truncate past their limit).
+    if (para.length > maxChars) {
+      for (let i = 0; i < para.length; i += maxChars) {
+        chunks.push(para.slice(i, i + maxChars).trim());
+      }
+      continue;
+    }
     current += para + '\n\n';
   }
   if (current.trim()) chunks.push(current.trim());
