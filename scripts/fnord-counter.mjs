@@ -12,6 +12,14 @@ export function countFnords(dir) {
   return results;
 }
 
+// Returns the top-N files by fnord count.
+export function topFnordFiles(counts, n) {
+  const limit = parseInt(process.env.FNORD_LIMIT);
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit || n);
+}
+
 const dir = process.argv[2];
 const counts = countFnords(dir);
 const total = Object.values(counts).reduce((a, b) => a + b);
