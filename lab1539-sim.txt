@@ -1,0 +1,1 @@
+LAB-1539 simulation marker — scratch file to trigger a Kody review while the instance model is deliberately broken. Safe to delete.
