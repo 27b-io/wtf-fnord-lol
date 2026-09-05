@@ -1,15 +1,15 @@
 ---
-title: "LAB-2940 scratch A: no bare fetch() in scratch fixtures"
+title: "LAB-2940 scratch B: no bare fetch() in scratch fixtures"
 scope: "file"
 path: ["scratch/**/*.ts"]
 severity_min: "medium"
 languages: ["jsts"]
-uuid: "lab-2940-scratch-rule-a"
+uuid: "lab-2940-scratch-rule-b"
 enabled: true
 ---
 
 ## Instructions
-Scratch-only fixture for the LAB-2940 .kody/rules sync-integrity trial (rule A). Flag any bare `fetch()` call in scratch fixtures that has no timeout or error handling.
+Scratch-only fixture for the LAB-2940 .kody/rules sync-integrity trial (rule B). Flag any bare `fetch()` call in scratch fixtures that has no timeout or error handling.
 
 ## Examples
 
