@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+<!-- @kody-ignore: house-style doc, not a review rule source (LAB-2939) -->
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
