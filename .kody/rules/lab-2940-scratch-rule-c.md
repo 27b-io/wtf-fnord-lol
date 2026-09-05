@@ -1,3 +1,4 @@
+<!-- @kody-ignore -->
 ---
 title: "LAB-2940 scratch C: no bare fetch() in scratch fixtures"
 scope: "file"
