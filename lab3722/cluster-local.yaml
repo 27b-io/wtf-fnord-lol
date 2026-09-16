@@ -1,0 +1,26 @@
+# LAB-3722 scratch: cluster-local and loopback plaintext HTTP. Expected: NO TLS/HSTS finding.
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: alertmanager
+  namespace: flux-system
+spec:
+  type: alertmanager
+  address: http://foo.bar.svc.cluster.local:9093/api/v2/alerts/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exporter
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+        - name: exporter
+          image: ghcr.io/example/exporter@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          env:
+            - name: UPSTREAM_URL
+              value: http://localhost:8080
+            - name: METRICS_URL
+              value: http://victoriametrics:8428/api/v1/write
