@@ -301,9 +301,14 @@ function chunkText(text: string, maxChars = 1500): string[] {
     }
     // A single paragraph can exceed maxChars on its own; hard-split it so no
     // chunk is silently oversized (embedding models truncate past their limit).
+    // Equal pieces, not maxChars slices: each piece is about maxChars / 2 or
+    // more, so no short tail is left for a size filter to drop.
     if (maxChars > 0 && para.length > maxChars) {
-      for (let i = 0; i < para.length; i += maxChars) {
-        chunks.push(para.slice(i, i + maxChars).trim());
+      const parts = Math.ceil(para.length / maxChars);
+      for (let k = 0; k < parts; k++) {
+        const start = Math.floor((k * para.length) / parts);
+        const end = Math.floor(((k + 1) * para.length) / parts);
+        chunks.push(para.slice(start, end).trim());
       }
       continue;
     }
