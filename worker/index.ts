@@ -303,13 +303,18 @@ function chunkText(text: string, maxChars = 1500): string[] {
     // chunk is silently oversized (embedding models truncate past their limit).
     // Equal pieces, not maxChars slices: each piece is about maxChars / 2 or
     // more, so no short tail is left for a size filter to drop. Pieces stay
-    // untrimmed for the same reason; whitespace-only pieces are skipped.
+    // untrimmed for the same reason; whitespace-only pieces are skipped. A cut
+    // inside a surrogate pair steps back one code unit; sizing pieces for
+    // maxChars - 1 leaves room for that, so the pair stays whole.
     if (maxChars > 0 && para.length > maxChars) {
-      const parts = Math.ceil(para.length / maxChars);
+      const parts = Math.ceil(para.length / Math.max(1, maxChars - 1));
+      const cut = (k: number) => {
+        const i = Math.floor((k * para.length) / parts);
+        const code = para.charCodeAt(i);
+        return i > 0 && code >= 0xdc00 && code <= 0xdfff ? i - 1 : i;
+      };
       for (let k = 0; k < parts; k++) {
-        const start = Math.floor((k * para.length) / parts);
-        const end = Math.floor(((k + 1) * para.length) / parts);
-        const piece = para.slice(start, end);
+        const piece = para.slice(cut(k), cut(k + 1));
         if (piece.trim()) chunks.push(piece);
       }
       continue;
