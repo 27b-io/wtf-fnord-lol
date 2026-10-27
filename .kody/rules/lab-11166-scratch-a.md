@@ -1,0 +1,26 @@
+---
+title: "LAB-11166 scratch: no bare fetch() in scratch fixtures"
+scope: "file"
+path: ["scratch/**/*.ts"]
+severity_min: "medium"
+languages: ["jsts"]
+enabled: true
+---
+
+## Instructions
+Scratch-only fixture for a rename-sync trial. Flag any bare `fetch()` call in scratch fixtures that has no timeout or error handling.
+
+## Examples
+
+### Bad example
+```ts
+const res = await fetch(url);
+```
+
+### Good example
+```ts
+const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+```
+
+<!-- @kody-sync -->
